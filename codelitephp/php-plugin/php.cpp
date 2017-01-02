@@ -868,8 +868,8 @@ void PhpPlugin::OnFileSysetmUpdated(clFileSystemEvent& event)
 {
     event.Skip();
     if(PHPWorkspace::Get()->IsOpen()) {
-        PHPWorkspace::Get()->SyncWithFileSystem();
-        m_workspaceView->LoadWorkspaceView();
+        // Sync the workspace view, notify the view when its done
+        PHPWorkspace::Get()->SyncWithFileSystemAsync(m_workspaceView);
     }
 }
 
@@ -886,6 +886,13 @@ void PhpPlugin::OnSaveSession(clCommandEvent& event)
 void PhpPlugin::DoSyncFileWithRemote(const wxFileName& localFile)
 {
     // Check to see if we got a remote-upload setup
+    PHPProject::Ptr_t pProject = PHPWorkspace::Get()->GetProjectForFile(localFile);
+    if(!pProject) {
+        // Not a workspace file
+        clDEBUG() << localFile << "is not a PHP workspace file, will not sync it with remote" << clEndl;
+        return;
+    }
+    
     SSHWorkspaceSettings settings;
     settings.Load();
 

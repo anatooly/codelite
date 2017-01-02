@@ -113,7 +113,7 @@
 #define TERMINAL_CMD ""
 #endif
 
-#if defined(__WXMSW__) && !defined(USE_POSIX_LAYOUT)
+#if defined(__WXMSW__)
 #define PATH_SEP wxT("\\")
 #else
 #define PATH_SEP wxT("/")

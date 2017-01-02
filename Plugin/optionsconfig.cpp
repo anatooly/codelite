@@ -124,11 +124,12 @@ OptionsConfig::OptionsConfig(wxXmlNode* node)
     , m_useLocale(0)
     , m_trimOnlyModifiedLines(true)
     , m_options(Opt_AutoCompleteCurlyBraces | Opt_AutoCompleteNormalBraces | Opt_NavKey_Shift | Opt_WrapBrackets |
-          Opt_WrapQuotes | Opt_AutoCompleteDoubleQuotes | Opt_FoldHighlightActiveBlock | Opt_WrapCmdWithDoubleQuotes |
-          Opt_TabStyleMinimal)
+                Opt_WrapQuotes | Opt_AutoCompleteDoubleQuotes | Opt_FoldHighlightActiveBlock |
+                Opt_WrapCmdWithDoubleQuotes)
     , m_workspaceTabsDirection(wxUP)
     , m_outputTabsDirection(wxUP)
     , m_indentedComments(false)
+    , m_nbTabHeight(nbTabHt_Tall)
 {
     m_debuggerMarkerLine = DrawingUtils::LightColour("LIME GREEN", 8.0);
     m_mswTheme = false;
@@ -208,6 +209,7 @@ OptionsConfig::OptionsConfig(wxXmlNode* node)
         m_caretUseCamelCase = XmlUtils::ReadBool(node, wxT("m_caretUseCamelCase"), m_caretUseCamelCase);
         m_wordWrap = XmlUtils::ReadBool(node, wxT("m_wordWrap"), m_wordWrap);
         m_dockingStyle = XmlUtils::ReadLong(node, wxT("m_dockingStyle"), m_dockingStyle);
+        m_nbTabHeight = XmlUtils::ReadLong(node, wxT("m_nbTabHeight"), m_nbTabHeight);
         m_mswTheme = XmlUtils::ReadBool(node, wxT("m_mswTheme"), m_mswTheme);
         m_preferredLocale = XmlUtils::ReadString(node, wxT("m_preferredLocale"), m_preferredLocale);
         m_useLocale = XmlUtils::ReadBool(node, wxT("m_useLocale"), m_useLocale);
@@ -306,6 +308,7 @@ wxXmlNode* OptionsConfig::ToXml() const
     n->AddProperty(wxT("m_caretUseCamelCase"), BoolToString(m_caretUseCamelCase));
     n->AddProperty(wxT("m_wordWrap"), BoolToString(m_wordWrap));
     n->AddProperty(wxT("m_dockingStyle"), wxString::Format(wxT("%d"), m_dockingStyle));
+    n->AddProperty(wxT("m_nbTabHeight"), wxString::Format(wxT("%d"), m_nbTabHeight));
     n->AddProperty(wxT("m_mswTheme"), BoolToString(m_mswTheme));
     n->AddProperty(wxT("m_preferredLocale"), m_preferredLocale);
     n->AddProperty(wxT("m_useLocale"), BoolToString(m_useLocale));
@@ -444,5 +447,37 @@ void OptionsConfig::SetBookmarkLabel(const wxString& label, size_t index)
     if(index < arr.GetCount()) {
         arr.Item(index) = label;
         m_bookmarkLabels = wxJoin(arr, ';');
+    }
+}
+
+void OptionsConfig::UpdateFromEditorConfig(const clEditorConfigSection& section)
+{
+    if(section.IsInsertFinalNewlineSet()) {
+        this->SetAppendLF(section.IsInsertFinalNewline());
+    }
+    if(section.IsSetEndOfLineSet()) {
+        // Convert .editorconfig to CodeLite strings
+        wxString eolMode = "Unix (LF)"; // default
+        if(section.GetEndOfLine() == "crlf") {
+            eolMode = "Windows (CRLF)";
+        } else if(section.GetEndOfLine() == "cr") {
+            eolMode = "Mac (CR)";
+        }
+        this->SetEolMode(eolMode);
+    }
+    if(section.IsTabWidthSet()) {
+        this->SetTabWidth(section.GetTabWidth());
+    }
+    if(section.IsIndentStyleSet()) {
+        this->SetIndentUsesTabs(section.GetIndentStyle() == "tab");
+    }
+    if(section.IsTabWidthSet()) {
+        this->SetTabWidth(section.GetTabWidth());
+    }
+    if(section.IsIndentSizeSet()) {
+        this->SetIndentWidth(section.GetIndentSize());
+    }
+    if(section.IsCharsetSet()) {
+        // TODO: fix the locale here
     }
 }

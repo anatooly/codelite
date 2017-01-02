@@ -3,9 +3,15 @@
 #include <wx/settings.h>
 #include <wx/dcmemory.h>
 
+#define DRAW_LINE(__p1, __p2) \
+    dc.DrawLine(__p1, __p2);  \
+    dc.DrawLine(__p1, __p2);  \
+    dc.DrawLine(__p1, __p2);  \
+    dc.DrawLine(__p1, __p2);
+
 clTabRendererCurved::clTabRendererCurved()
 {
-    bottomAreaHeight = 3;
+    bottomAreaHeight = 5;
     majorCurveWidth = 15;
     smallCurveWidth = 4;
     overlapWidth = 20;
@@ -16,7 +22,7 @@ clTabRendererCurved::~clTabRendererCurved() {}
 
 void clTabRendererCurved::Draw(wxDC& dc, const clTabInfo& tabInfo, const clTabColours& colours, size_t style)
 {
-    const int TOP_SMALL_HEIGHT = 2;
+    const int TOP_SMALL_HEIGHT = 0;
     wxColour bgColour(tabInfo.IsActive() ? colours.activeTabBgColour : colours.inactiveTabBgColour);
     wxColour penColour(tabInfo.IsActive() ? colours.activeTabPenColour : colours.inactiveTabPenColour);
     wxFont font = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
@@ -241,132 +247,41 @@ void clTabRendererCurved::Draw(wxDC& dc, const clTabInfo& tabInfo, const clTabCo
 void clTabRendererCurved::DrawBottomRect(
     clTabInfo::Ptr_t activeTab, const wxRect& clientRect, wxDC& dc, const clTabColours& colours, size_t style)
 {
-    if(style & kNotebook_LeftTabs) {
-        // Draw 3 lines on the right
-        dc.SetPen(colours.activeTabPenColour);
-        dc.SetBrush(colours.activeTabBgColour);
-        wxPoint topLeft = clientRect.GetTopRight();
-        wxSize rectSize(bottomAreaHeight + 2, clientRect.height);
-        topLeft.x -= bottomAreaHeight;
-        wxRect bottomRect(topLeft, rectSize);
-
-        // We intentionally move the rect out of the client rect
-        // so the top and bottom lines will be drawn out of screen
-        bottomRect.y -= 1;
-        bottomRect.height += 2;
-        dc.DrawRectangle(bottomRect);
-
-        // Draw a line under the active tab
-        // that will erase the line drawn by the above rect
-        wxPoint from, to;
-        from = activeTab->GetRect().GetTopRight();
-        to = activeTab->GetRect().GetBottomRight();
-        from.x = bottomRect.GetTopLeft().x;
-        to.x = bottomRect.GetTopLeft().x;
-        from.y += 2;
-        to.y -= 2;
-
-        dc.SetPen(colours.activeTabBgColour);
-        dc.DrawLine(from, to);
 #ifdef __WXOSX__
-        dc.DrawLine(from, to);
-        dc.DrawLine(from, to);
-        dc.DrawLine(from, to);
-#endif
-    } else if(style & kNotebook_RightTabs) {
-        // Draw 3 lines on the right
-        dc.SetPen(colours.activeTabPenColour);
-        dc.SetBrush(colours.activeTabBgColour);
-        wxPoint topLeft = clientRect.GetTopLeft();
-        wxSize rectSize(bottomAreaHeight + 2, clientRect.height);
-        wxRect bottomRect(topLeft, rectSize);
-
-        // We intentionally move the rect out of the client rect
-        // so the top and bottom lines will be drawn out of screen
-        bottomRect.y -= 1;
-        bottomRect.height += 2;
-        dc.DrawRectangle(bottomRect);
-
-        // Draw a line under the active tab
-        // that will erase the line drawn by the above rect
-        wxPoint from, to;
-        from = activeTab->GetRect().GetTopLeft();
-        to = activeTab->GetRect().GetBottomLeft();
-        from.x = bottomRect.GetTopRight().x;
-        to.x = bottomRect.GetTopRight().x;
-        from.y += 2;
-        to.y -= 2;
-
+    if(!IS_VERTICAL_TABS(style)) {
+        wxPoint pt1, pt2;
         dc.SetPen(colours.activeTabBgColour);
-        dc.DrawLine(from, to);
-#ifdef __WXOSX__
-        dc.DrawLine(from, to);
-        dc.DrawLine(from, to);
-        dc.DrawLine(from, to);
-#endif
+        if(style & kNotebook_BottomTabs) {
+            // bottom tabs
+            pt1 = clientRect.GetTopLeft();
+            pt2 = clientRect.GetTopRight();
+            DRAW_LINE(pt1, pt2);
 
-    } else if(style & kNotebook_BottomTabs) {
-        // Draw 3 lines at the top
-        dc.SetPen(colours.activeTabPenColour);
-        dc.SetBrush(colours.activeTabBgColour);
-        wxPoint topLeft = clientRect.GetTopLeft();
-        wxSize rectSize(clientRect.width, bottomAreaHeight);
-        topLeft.y = 0;
-        wxRect bottomRect(topLeft, rectSize);
-        // We intentionally move the rect out of the client rect
-        // so the left and right lines will be drawn out of screen
-        bottomRect.x -= 1;
-        bottomRect.width += 2;
-        dc.DrawRectangle(bottomRect);
-
-        // Draw a line under the active tab
-        // that will erase the line drawn by the above rect
-        wxPoint from, to;
-        from = activeTab->GetRect().GetTopLeft();
-        to = activeTab->GetRect().GetTopRight();
-        from.y += bottomAreaHeight - 1;
-        from.x += 2;
-        to.y += bottomAreaHeight - 1;
-        to.x -= 2;
-
-        dc.SetPen(colours.activeTabBgColour);
-        dc.DrawLine(from, to);
-#ifdef __WXOSX__
-        dc.DrawLine(from, to);
-        dc.DrawLine(from, to);
-        dc.DrawLine(from, to);
-#endif
-
-    } else {
-        // Draw 3 lines at the bottom
-        dc.SetPen(colours.activeTabPenColour);
-        dc.SetBrush(colours.activeTabBgColour);
-        wxPoint topLeft = clientRect.GetBottomLeft();
-        wxSize rectSize(clientRect.width, bottomAreaHeight);
-        topLeft.y -= rectSize.GetHeight() - 1;
-        wxRect bottomRect(topLeft, rectSize);
-        // We intentionally move the rect out of the client rect
-        // so the left and right lines will be drawn out of screen
-        bottomRect.x -= 1;
-        bottomRect.width += 2;
-        dc.DrawRectangle(bottomRect);
-
-        // Draw a line under the active tab
-        // that will erase the line drawn by the above rect
-        wxPoint from, to;
-        from = activeTab->GetRect().GetBottomLeft();
-        to = activeTab->GetRect().GetBottomRight();
-        from.y -= bottomAreaHeight - 1;
-        from.x += 2;
-        to.y -= bottomAreaHeight - 1;
-        to.x -= 2;
-
-        dc.SetPen(colours.activeTabBgColour);
-        dc.DrawLine(from, to);
-#ifdef __WXOSX__
-        dc.DrawLine(from, to);
-        dc.DrawLine(from, to);
-        dc.DrawLine(from, to);
-#endif
+        } else {
+            // Top tabs
+            pt1 = clientRect.GetBottomLeft();
+            pt2 = clientRect.GetBottomRight();
+            pt1.y -= 1;
+            pt2.y -= 1;
+            DRAW_LINE(pt1, pt2);
+        }
     }
+#else
+    if(!IS_VERTICAL_TABS(style)) {
+        wxPoint pt1, pt2;
+        dc.SetPen(colours.activeTabPenColour);
+        if(style & kNotebook_BottomTabs) {
+            // bottom tabs
+            pt1 = clientRect.GetTopLeft();
+            pt2 = clientRect.GetTopRight();
+            DRAW_LINE(pt1, pt2);
+
+        } else {
+            // Top tabs
+            pt1 = clientRect.GetBottomLeft();
+            pt2 = clientRect.GetBottomRight();
+            DRAW_LINE(pt1, pt2);
+        }
+    }
+#endif
 }

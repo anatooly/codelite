@@ -276,12 +276,17 @@ wxString CMakeGenerator::GenerateProject(ProjectPtr project, bool topProject, co
     // we need to fix this
     Project::FileInfoVector_t vfiles;
     project->GetFilesMetadata(vfiles);
-
+    
+    
+    // Get the project build configuration and compiler
+    BuildConfigPtr buildConf = project->GetBuildConfiguration(configName);
+    if(!buildConf) return "";
+    
     wxArrayString cppSources, cSources, resourceFiles;
     wxString workspacePath = clCxxWorkspaceST::Get()->GetFileName().GetPath();
     std::for_each(vfiles.begin(), vfiles.end(), [&](const Project::FileInfo& fi) {
+        if(fi.IsExcludeFromConfiguration(buildConf->GetName())) return;
         wxFileName fn(fi.GetFilename());
-
         // Make it relative to the workspace
         fn.MakeRelativeTo(workspacePath);
 
@@ -300,9 +305,6 @@ wxString CMakeGenerator::GenerateProject(ProjectPtr project, bool topProject, co
 
     // Get project directory
     wxString projectDir = project->GetFileName().GetPath();
-
-    // Get the project build configuration and compiler
-    BuildConfigPtr buildConf = project->GetBuildConfiguration(configName);
 
     // Sanity
     if(!buildConf || buildConf->IsCustomBuild()) {
@@ -635,11 +637,11 @@ void CMakeGenerator::ExpandOptions(
             wxString varname;
             varname << "CL_VAR_" << (++m_counter);
             // Create a CMake command that executes this command
-            content << indent << "execute_process(COMMAND \n" 
-                    << indent << "    " << cmpOption << "\n"
-                    << indent << "    " << "OUTPUT_VARIABLE\n"
-                    << indent << "    " << "CL_TMP_VAR\n"
-                    << indent << "    " << "OUTPUT_STRIP_TRAILING_WHITESPACE)\n";
+            content << indent << "execute_process(COMMAND \n" << indent << "    " << cmpOption << "\n" << indent
+                    << "    "
+                    << "OUTPUT_VARIABLE\n" << indent << "    "
+                    << "CL_TMP_VAR\n" << indent << "    "
+                    << "OUTPUT_STRIP_TRAILING_WHITESPACE)\n";
             content << indent << "string(STRIP ${CL_TMP_VAR} " << varname << ")\n";
             arrVars.Add(varname);
         } else {

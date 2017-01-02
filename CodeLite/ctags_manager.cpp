@@ -225,6 +225,7 @@ TagTreePtr TagsManager::ParseSourceFile(const wxFileName& fp, std::vector<Commen
     wxString tags;
 
     if(!m_codeliteIndexerProcess) {
+        clWARNING() << "Indexer process is not running..." << clEndl;
         return TagTreePtr(NULL);
     }
     SourceToTags(fp, tags);
@@ -362,29 +363,36 @@ void TagsManager::SourceToTags(const wxFileName& source, wxString& tags)
              << wxT(" --excmd=pattern --sort=no --fields=aKmSsnit --c-kinds=+p --C++-kinds=+p ");
     req.setCtagOptions(ctagsCmd.mb_str(wxConvUTF8).data());
 
+    clDEBUG1() << "Sending CTAGS command:" << ctagsCmd << clEndl;
     // connect to the indexer
     if(!client.connect()) {
-        wxPrintf(wxT("Failed to connect to indexer ID %d!\n"), (int)wxGetProcessId());
+        clWARNING() << "Failed to connect to indexer process. Indexer ID:" << wxGetProcessId() << clEndl;
         return;
     }
 
     // send the request
     if(!clIndexerProtocol::SendRequest(&client, req)) {
-        wxPrintf(wxT("Failed to send request to indexer ID [%d]\n"), (int)wxGetProcessId());
+        clWARNING() << "Failed to send request to indexer. Indexer ID:" << wxGetProcessId() << clEndl;
         return;
     }
 
     // read the reply
     clIndexerReply reply;
+    clDEBUG1() << "SourceToTags: reading indexer reply" << clEndl;
     try {
-        if(!clIndexerProtocol::ReadReply(&client, reply)) {
+        std::string errmsg;
+        if(!clIndexerProtocol::ReadReply(&client, reply, errmsg)) {
+            clWARNING() << "Failed to read indexer reply: " << (wxString() << errmsg) << clEndl;
             RestartCodeLiteIndexer();
             return;
         }
     } catch(std::bad_alloc& ex) {
+        clWARNING() << "std::bad_alloc exception caught" << clEndl;
         tags.Clear();
         return;
     }
+
+    clDEBUG1() << "SourceToTags: [" << reply.getTags() << "]" << clEndl;
 
     // convert the data into wxString
     if(m_encoding == wxFONTENCODING_DEFAULT || m_encoding == wxFONTENCODING_SYSTEM)
@@ -396,6 +404,8 @@ void TagsManager::SourceToTags(const wxFileName& source, wxString& tags)
     }
 
     AddEnumClassData(tags);
+
+    clDEBUG1() << "Tags:\n" << tags << clEndl;
 
 #if 0
     wxFFile fff(clStandardPaths::Get().GetUserDataDir() + wxT("\\tmp_tags"), wxT("w+"));
@@ -549,7 +559,6 @@ bool TagsManager::WordCompletionCandidates(const wxFileName& fileName, int linen
         int lastFuncLine = funcTag ? funcTag->GetLine() : -1;
         textAfterTokenReplacements = GetLanguage()->ApplyCtagsReplacementTokens(text);
         scope = GetLanguage()->OptimizeScope(textAfterTokenReplacements, lastFuncLine, curFunctionBody);
-        std::vector<TagEntryPtr> tmpCandidates;
 
         // First get the scoped tags
         TagsByScopeAndName(scopeName, word, scoped);
@@ -934,7 +943,7 @@ void TagsManager::FindImplDecl(const wxFileName& fileName, int lineno, const wxS
 
     wxString path;
     wxString tmp;
-    std::vector<TagEntryPtr> tmpCandidates, candidates;
+    std::vector<TagEntryPtr> tmpCandidates;
 
     // remove the word from the expression
     wxString expression(expr);
@@ -1690,8 +1699,6 @@ void TagsManager::CloseDatabase()
 DoxygenComment TagsManager::GenerateDoxygenComment(const wxString& file, const int line, wxChar keyPrefix)
 {
     if(GetDatabase()->IsOpen()) {
-        std::vector<TagEntryPtr> tags;
-
         TagEntryPtr tag = GetDatabase()->GetTagAboveFileAndLine(file, line);
         if(!tag) {
             return DoxygenComment();
@@ -2293,7 +2300,7 @@ void TagsManager::GetUnImplementedFunctions(const wxString& scopeName, std::map<
         protos[key] = tag;
     }
 
-    std::map<std::string, std::string> ignoreTokens = GetCtagsOptions().GetTokensMap();
+   // std::map<std::string, std::string> ignoreTokens = GetCtagsOptions().GetTokensMap();
 
     // remove functions with implementation
     for(size_t i = 0; i < vimpl.size(); i++) {
@@ -2376,7 +2383,7 @@ wxString TagsManager::DoReplaceMacros(wxString name)
     wxString _name(name);
 
     std::map<wxString, wxString> iTokens = GetCtagsOptions().GetTokensWxMap();
-    std::map<wxString, wxString>::iterator it = iTokens.end();
+    std::map<wxString, wxString>::iterator it;
 
     it = iTokens.find(name);
     if(it != iTokens.end()) {
@@ -2874,7 +2881,6 @@ wxString TagsManager::DoReplaceMacrosFromDatabase(const wxString& name)
     std::set<wxString> scannedMacros;
     wxString newName = name;
     while(true) {
-        std::vector<TagEntryPtr> tmpTags;
         TagEntryPtr matchedTag = GetDatabase()->GetTagsByNameLimitOne(newName);
         if(matchedTag && matchedTag->IsMacro() && scannedMacros.find(matchedTag->GetName()) == scannedMacros.end()) {
             TagEntryPtr realTag = matchedTag->ReplaceSimpleMacro();
@@ -3222,6 +3228,7 @@ void TagsManager::GetKeywordsTagsForLanguage(const wxString& filter, eLanguage l
             " export"
             " extern"
             " false"
+            " final"
             " float"
             " for"
             " friend"
@@ -3241,6 +3248,7 @@ void TagsManager::GetKeywordsTagsForLanguage(const wxString& filter, eLanguage l
             " operator"
             " or"
             " or_eq"
+            " override"
             " private"
             " protected"
             " public"

@@ -30,6 +30,7 @@
 #include "PHPEntityFunctionAlias.h"
 #include "tags_options_data.h"
 #include "cl_config.h"
+#include "editor_config.h"
 
 ///////////////////////////////////////////////////////////////////
 
@@ -614,7 +615,11 @@ void PHPCodeCompletion::OnInsertDoxyBlock(clCodeCompletionEvent& e)
             PHPEntityBase::Ptr_t match = *iter;
             if(match->GetLine() == 0 && match->Is(kEntityTypeFunction)) {
                 e.Skip(false); // notify codelite to stop processing this event
-                wxString phpdoc = match->FormatPhpDoc();
+                
+                CommentConfigData data;
+                EditorConfigST::Get()->ReadObject(wxT("CommentConfigData"), &data);
+                
+                wxString phpdoc = match->FormatPhpDoc(data);
                 phpdoc.Trim();
                 e.SetTooltip(phpdoc);
             }
@@ -678,7 +683,7 @@ wxString PHPCodeCompletion::ExpandRequire(const wxFileName& curfile, const wxStr
         case kPHP_T_REQUIRE_ONCE:
             break;
         case kPHP_T_CONSTANT_ENCAPSED_STRING: {
-            wxString str = token.text;
+            wxString str = token.Text();
             str.Trim().Trim(false);
             // strip the " or ' from the string
             str.Remove(0, 1).RemoveLast();
@@ -738,7 +743,7 @@ int PHPCodeCompletion::GetLocationForSettersGetters(const wxString& filecontent,
             continue;
         }
 
-        if(::phpLexerNext(scanner, token) && token.type == kPHP_T_IDENTIFIER && token.text == classname) {
+        if(::phpLexerNext(scanner, token) && token.type == kPHP_T_IDENTIFIER && token.Text() == classname) {
             // we found the class definition
             isOK = true;
             break;

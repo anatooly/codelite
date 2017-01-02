@@ -90,7 +90,8 @@ bool Project::Create(const wxString& name, const wxString& description, const wx
     wxXmlNode* root = new wxXmlNode(NULL, wxXML_ELEMENT_NODE, wxT("CodeLite_Project"));
     m_doc.SetRoot(root);
     m_doc.GetRoot()->AddProperty(wxT("Name"), name);
-
+    m_doc.GetRoot()->AddAttribute("Version", WORKSPACE_XML_VERSION);
+    
     wxXmlNode* descNode = new wxXmlNode(NULL, wxXML_ELEMENT_NODE, wxT("Description"));
     XmlUtils::SetNodeContent(descNode, description);
     m_doc.GetRoot()->AddChild(descNode);
@@ -390,6 +391,13 @@ bool Project::SaveXmlFile()
 {
     wxString projectXml;
     wxStringOutputStream sos(&projectXml);
+    
+    // Set the workspace XML version
+    wxString version;
+    if(!m_doc.GetRoot()->GetAttribute("Version", &version)) {
+        m_doc.GetRoot()->AddAttribute("Version", WORKSPACE_XML_VERSION);
+    }
+    
     bool ok = m_doc.Save(sos);
 
     wxFFile file(m_fileName.GetFullPath(), wxT("w+b"));
@@ -582,7 +590,8 @@ void Project::CopyTo(const wxString& new_path, const wxString& new_name, const w
 
     // update the 'Name' property
     XmlUtils::UpdateProperty(doc.GetRoot(), wxT("Name"), new_name);
-
+    XmlUtils::UpdateProperty(doc.GetRoot(), "Version", WORKSPACE_XML_VERSION);
+    
     // set description
     wxXmlNode* descNode(NULL);
 
@@ -1176,15 +1185,18 @@ wxString Project::GetBestPathForVD(const wxString& vdPath)
     return basePath;
 }
 
-wxArrayString Project::GetIncludePaths(bool clearCache)
+wxArrayString Project::GetIncludePaths()
 {
-    wxArrayString paths;
+    if(!m_cachedIncludePaths.IsEmpty()) {
+        return m_cachedIncludePaths;
+    }
 
     BuildMatrixPtr matrix = GetWorkspace()->GetBuildMatrix();
     if(!matrix) {
-        return paths;
+        return m_cachedIncludePaths;
     }
 
+    wxStringSet_t paths;
     wxString workspaceSelConf = matrix->GetSelectedConfigurationName();
 
     wxString projectSelConf = matrix->GetProjectSelectedConf(workspaceSelConf, GetName());
@@ -1194,10 +1206,6 @@ wxArrayString Project::GetIncludePaths(bool clearCache)
     if(buildConf) {
         // Apply the environment
         EnvSetter es(this);
-        
-        if(clearCache) {
-            s_backticks.clear();
-        }
 
         // Get the include paths and add them
         wxString projectIncludePaths = buildConf->GetIncludePath();
@@ -1219,7 +1227,7 @@ wxArrayString Project::GetIncludePaths(bool clearCache)
                     fn.MakeAbsolute(GetFileName().GetPath());
                 }
             }
-            paths.Add(fn.GetFullPath());
+            paths.insert(fn.GetFullPath());
         }
 
         // get the compiler options and add them
@@ -1244,11 +1252,16 @@ wxArrayString Project::GetIncludePaths(bool clearCache)
             // unchanged
             wxArrayString includePaths = DoBacktickToIncludePath(cmpOption);
             if(!includePaths.IsEmpty()) {
-                paths.insert(paths.end(), includePaths.begin(), includePaths.end());
+                std::for_each(includePaths.begin(), includePaths.end(), [&](const wxString& path) {
+                    wxFileName fn(path, "");
+                    paths.insert(fn.GetPath());
+                });
             }
         }
     }
-    return paths;
+
+    std::for_each(paths.begin(), paths.end(), [&](const wxString& path) { m_cachedIncludePaths.Add(path); });
+    return m_cachedIncludePaths;
 }
 
 wxArrayString Project::DoBacktickToPreProcessors(const wxString& backtick)
@@ -1870,7 +1883,6 @@ wxArrayString Project::DoGetCompilerOptions(bool cxxOptions, bool clearCache, bo
 
 void Project::ProjectRenamed(const wxString& oldname, const wxString& newname)
 {
-    std::map<wxString, wxArrayString> configs;
     // dependencies are located directly under the root level
     wxXmlNode* node = m_doc.GetRoot()->GetChildren();
     while(node) {
@@ -1941,4 +1953,12 @@ void Project::GetUnresolvedMacros(const wxString& configName, wxArrayString& var
             }
         }
     }
+}
+
+void Project::ClearIncludePathCache() { m_cachedIncludePaths.clear(); }
+
+wxString Project::GetVersion() const
+{
+    if(!m_doc.IsOk() || m_doc.GetRoot()) return wxEmptyString;
+    return m_doc.GetRoot()->GetAttribute("Version");
 }

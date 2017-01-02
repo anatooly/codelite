@@ -1,10 +1,9 @@
 #include "PHPEntityFunction.h"
 #include "PHPEntityVariable.h"
 #include "file_logger.h"
+#include "commentconfigdata.h"
 
-PHPEntityFunction::PHPEntityFunction()
-{
-}
+PHPEntityFunction::PHPEntityFunction() {}
 
 PHPEntityFunction::~PHPEntityFunction() {}
 
@@ -51,8 +50,9 @@ void PHPEntityFunction::Store(wxSQLite3Database& db)
 {
     wxString fullname;
     fullname << GetScope() << "\\" << GetShortName();
-    while(fullname.Replace("\\\\", "\\")){}
-    
+    while(fullname.Replace("\\\\", "\\")) {
+    }
+
     try {
         wxSQLite3Statement statement = db.PrepareStatement(
             "INSERT OR REPLACE INTO FUNCTION_TABLE VALUES(NULL, :SCOPE_ID, :NAME, :FULLNAME, :SCOPE, :SIGNATURE, "
@@ -99,16 +99,18 @@ wxString PHPEntityFunction::GetScope() const
 wxString PHPEntityFunction::Type() const { return GetReturnValue(); }
 bool PHPEntityFunction::Is(eEntityType type) const { return type == kEntityTypeFunction; }
 wxString PHPEntityFunction::GetDisplayName() const { return wxString() << GetShortName() << GetSignature(); }
-wxString PHPEntityFunction::FormatPhpDoc() const
+wxString PHPEntityFunction::FormatPhpDoc(const CommentConfigData& data) const
 {
     wxString doc;
-    doc << "/**\n"
+    doc << data.GetCommentBlockPrefix() << "\n"
         << " * @brief \n";
     PHPEntityBase::List_t::const_iterator iter = m_children.begin();
     for(; iter != m_children.end(); ++iter) {
         const PHPEntityVariable* var = (*iter)->Cast<PHPEntityVariable>();
-        doc << " * @param " << (var->GetTypeHint().IsEmpty() ? "<unknown>" : var->GetTypeHint()) << " "
-            << var->GetFullName() << " \n";
+        if(var) {
+            doc << " * @param " << (var->GetTypeHint().IsEmpty() ? "<unknown>" : var->GetTypeHint()) << " "
+                << var->GetFullName() << " \n";
+        }
     }
     doc << " * @return " << GetReturnValue() << " \n";
     doc << " */";

@@ -34,6 +34,7 @@
 #include <cl_command_event.h>
 #include "wx_ordered_map.h"
 #include "clTreeKeyboardInput.h"
+#include "clFileSystemEvent.h"
 
 class IManager;
 class ItemData;
@@ -59,6 +60,7 @@ protected:
     void OnFolderDropped(clCommandEvent& event);
 
     virtual void OnCollapseUI(wxUpdateUIEvent& event);
+    virtual void OnStartDebuggerListenerUI(wxUpdateUIEvent& event);
     virtual void OnSetupRemoteUploadUI(wxUpdateUIEvent& event);
     virtual void OnItemActivated(wxTreeEvent& event);
     virtual void OnMenu(wxTreeEvent& event);
@@ -144,7 +146,8 @@ protected:
     void OnWorkspaceRenamed(PHPEvent& e);
     void OnFindInFilesShowing(clCommandEvent& e);
     void OnToggleAutoUpload(wxCommandEvent& e);
-
+    void OnStartDebuggerListener(wxCommandEvent& e);
+    
     // Php parser events
     void OnPhpParserStarted(clParseEvent& event);
     void OnPhpParserProgress(clParseEvent& event);
@@ -153,7 +156,8 @@ protected:
     // PHP Workspace events
     void OnWorkspaceSyncStart(clCommandEvent& event);
     void OnWorkspaceSyncEnd(clCommandEvent& event);
-
+    void OnFileSaveAs(clFileSystemEvent& event);
+    
 public:
     /** Constructor */
     PHPWorkspaceView(wxWindow* parent, IManager* mgr);

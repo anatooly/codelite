@@ -45,11 +45,19 @@ class FileViewTree : public wxTreeCtrl
     DECLARE_DYNAMIC_CLASS()
 
     std::map<void*, bool> m_itemsToSort;
-    wxArrayTreeItemIds m_draggedItems;
+    wxArrayTreeItemIds m_draggedFiles;
+    wxArrayTreeItemIds m_draggedProjects;
     clTreeKeyboardInput::Ptr_t m_keyboardHelper;
+    std::map<wxString, wxTreeItemId> m_workspaceFolders;
+    std::map<wxString, wxTreeItemId> m_projectsMap;
+    bool m_eventsBound;
 
 protected:
     void DoCreateProjectContextMenu(wxMenu& menu, const wxString& projectName);
+    void DoBindEvents();
+    void DoUnbindEvents();
+    void DoFilesEndDrag(wxTreeItemId& itemDst);
+    void DoProjectsEndDrag(wxTreeItemId& itemDst);
 
 public:
     /**
@@ -181,11 +189,20 @@ protected:
     virtual void OnBuildTree(wxCommandEvent& e);
     void OnFolderDropped(clCommandEvent& event);
 
+    // Called from the context menu of a workspace folder
+    void OnWorkspaceNewWorkspaceFolder(wxCommandEvent& evt);
+    void OnNewProject(wxCommandEvent& evt);
+    // Called from the workspace context menu
+    void OnWorkspaceFolderNewFolder(wxCommandEvent& evt);
+
+    void OnWorkspaceFolderDelete(wxCommandEvent& evt);
+
     // Tree sorting
     virtual int OnCompareItems(const wxTreeItemId& item1, const wxTreeItemId& item2);
     int OnCompareItems(const FilewViewTreeItemData* a, const FilewViewTreeItemData* b);
 
     void ShowWorkspaceContextMenu();
+    void ShowWorkspaceFolderContextMenu();
     void ShowProjectContextMenu(const wxString& projectName);
     void ShowVirtualFolderContextMenu(FilewViewTreeItemData* itemData);
     void ShowFileContextMenu();
@@ -194,9 +211,22 @@ protected:
     void OnBuildProjectOnlyInternal(wxCommandEvent& e);
     void OnCleanProjectOnlyInternal(wxCommandEvent& e);
 
+    /**
+     * @brief clear the "active" marker from all the projects
+     */
+    void UnselectAllProject();
+
 private:
     // Build project node
     void BuildProjectNode(const wxString& projectName);
+    void DoClear();
+
+    /**
+     * @brief add a workspace folder
+     * @param folderPath the path, separated by "/"
+     */
+    wxTreeItemId AddWorkspaceFolder(const wxString& folderPath);
+
     int GetIconIndex(const ProjectItem& item);
     wxString GetItemPath(wxTreeItemId& item) const;
     bool IsFileExcludedFromBuild(const wxTreeItemId& item) const;

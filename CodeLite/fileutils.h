@@ -82,8 +82,8 @@ public:
      * @param password the password
      * @param port ssh port
      */
-    static void OpenSSHTerminal(
-        const wxString& sshClient, const wxString& connectString, const wxString& password, int port = 22);
+    static void
+    OpenSSHTerminal(const wxString& sshClient, const wxString& connectString, const wxString& password, int port = 22);
 
     /**
      * @brief OSX only: open Terminal and return its TTY
@@ -91,7 +91,12 @@ public:
      * @param [output] tty the TTY of the launched terminal
      */
     static void OSXOpenDebuggerTerminalAndGetTTY(const wxString& path, wxString& tty, long& pid);
-
+    
+    /**
+     * @brief return the command needed to open OSX terminal at a given directory and launch a command
+     */
+    static wxString GetOSXTerminalCommand(const wxString& command, const wxString& workingDirectory);
+    
     /**
      * @brief file masking search
      */
@@ -122,7 +127,12 @@ public:
      * @brief encode URI using percent encoding
      */
     static wxString EncodeURI(const wxString& uri);
-
+    
+    /**
+     * @brief escape string. Each space and double quotes marker is escaped with backslash
+     */
+    static wxString EscapeString(const wxString& str);
+    
     /**
      * @brief is the file or folder a hidden file?
      */
@@ -131,5 +141,25 @@ public:
      * @brief is the file or folder a hidden file?
      */
     static bool IsHidden(const wxString& path);
+
+    /**
+     * @brief set permissions to filename
+     */
+    static bool SetFilePermissions(const wxFileName& filename, mode_t perm);
+
+    /**
+     * @brief get file permissions
+     */
+    static bool GetFilePermissions(const wxFileName& filename, mode_t& perm);
+    
+    /**
+     * @brief return the file modification time
+     */
+    static time_t GetFileModificationTime(const wxFileName& filename);
+    
+    /**
+     * @brief return the file size, in bytes
+     */
+    static size_t GetFileSize(const wxFileName& filename);
 };
 #endif // FILEUTILS_H

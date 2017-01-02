@@ -106,12 +106,15 @@ wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_FILE_SAVE_BY_BUILD_START, wxComma
 // Use: clCommandEvent::GetString() or clCommandEvent::GetFileName() to get the name of file
 wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_FILE_SAVED, clCommandEvent);
 
+// A file was renamed
+wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_FILE_RENAMED, clFileSystemEvent);
+
+// A file was "Save as" by the user
+// This event can also be fired if the user selected "Duplicate Tab"
+wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_FILE_SAVEAS, clFileSystemEvent);
+
 // clientData is list of files which have been retagged (std::vector<wxFileName>*)
 wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_FILE_RETAGGED, wxCommandEvent);
-
-// clientData is wxArrayString*: Item(0) = oldName
-//                               Item(1) = newName
-wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_FILE_RENAMED, wxCommandEvent);
 
 // The active editor was changed
 wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_ACTIVE_EDITOR_CHANGED, wxCommandEvent);
@@ -418,19 +421,18 @@ wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_REBUILD_WORKSPACE_TREE, wxCommand
 // Event type: clProjectSettingsEvent
 wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_ACTIVE_PROJECT_CHANGED, clProjectSettingsEvent);
 
-// This event is fired by codelite when the find-bar is requested to be shown
-// the default for the find bar is not to be shown if it has no window associated with it
-// The Window is passed using the event.GetClientData()
-// The Window *MUST* be of type wxStyledTextCtrl
-wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_FINDBAR_ABOUT_TO_SHOW, wxCommandEvent);
+// This event is fired by CodeLite before the find bar is shown
+// The handler can pass a wxStyledTextCtrl class pointer to be associated with the 
+// find bar by using the clFindEvent::SetCtrl() method
+wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_FINDBAR_ABOUT_TO_SHOW, clFindEvent);
 
 // A plugin *must* send this event to ask the find bar to release any window associated with it
 // This event should be used with  'wxEVT_FINDBAR_ABOUT_TO_SHOW'. If this event is not sent when the window
 // is destroyed - it might result in a crash
-// The window pointer is passed using event.GetClientData()
-// If the editor managed by the find-bar is the same as event.GetClientData() -> the find-bar will un-refernce it
+// The window pointer is passed using event.SetCtrl()
+// If the editor managed by the find-bar is the same as event.GetCtrl() -> the find-bar will un-refernce it
 // but *IT DOES NOT FREE ITS MEMORY*
-wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_FINDBAR_RELEASE_EDITOR, wxCommandEvent);
+wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_FINDBAR_RELEASE_EDITOR, clFindEvent);
 
 // Instruct codelite to build a project only ( no deps )
 // the project name is passed in the wxCommandEvent::GetString
@@ -749,5 +751,13 @@ wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_SHOW_OUTPUT_TAB, clCommandEvent);
 //
 // Use: event.GetClientData() to get the pointer to the window page
 wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_PAGE_MODIFIED_UPDATE_UI, clCommandEvent);
+
+// Send a clEditorConfig event. This event is sent whenever an editor requires
+// to update its properties (tabs vs spaces, EOL style etc)
+// A plugin may capture the event and send back EditorConfig data by doing the following:
+// Call: 
+// 1. event.Skip(false)
+// 2. Set the data using event.SetEditorConfig(...) method
+wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_CL, wxEVT_EDITOR_CONFIG_LOADING, clEditorConfigEvent);
 
 #endif // CODELITE_EVENTS_H

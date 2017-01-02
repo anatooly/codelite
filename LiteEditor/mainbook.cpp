@@ -72,12 +72,12 @@ void MainBook::CreateGuiControls()
 
     m_navBar = new NavBar(this);
     sz->Add(m_navBar, 0, wxEXPAND);
-    long style = kNotebook_AllowDnD |                  // Allow tabs to move
-                 kNotebook_MouseMiddleClickClosesTab | // Handle mouse middle button when clicked on a tab
-                 kNotebook_MouseMiddleClickFireEvent | // instead of closing the tab, fire an event
-                 kNotebook_ShowFileListButton |        // show drop down list of all open tabs
-                 kNotebook_EnableNavigationEvent |     // Notify when user hit Ctrl-TAB or Ctrl-PGDN/UP
-                 kNotebook_UnderlineActiveTab;         // Mark active tab with dedicated coloured line
+    long style = kNotebook_AllowDnD |         // Allow tabs to move
+        kNotebook_MouseMiddleClickClosesTab | // Handle mouse middle button when clicked on a tab
+        kNotebook_MouseMiddleClickFireEvent | // instead of closing the tab, fire an event
+        kNotebook_ShowFileListButton |        // show drop down list of all open tabs
+        kNotebook_EnableNavigationEvent |     // Notify when user hit Ctrl-TAB or Ctrl-PGDN/UP
+        kNotebook_UnderlineActiveTab;         // Mark active tab with dedicated coloured line
 
     if(EditorConfigST::Get()->GetOptions()->IsTabHasXButton()) {
         style |= (kNotebook_CloseButtonOnActiveTabFireEvent | kNotebook_CloseButtonOnActiveTab);
@@ -379,7 +379,6 @@ void MainBook::GetAllEditors(LEditor::Vec_t& editors, size_t flags)
                 }
             }
         } else {
-            std::vector<wxWindow*> windows;
             for(size_t i = 0; i < m_book->GetPageCount(); i++) {
                 LEditor* editor = dynamic_cast<LEditor*>(m_book->GetPage(i));
                 if(editor) {
@@ -418,11 +417,11 @@ LEditor* MainBook::FindEditor(const wxString& fileName)
 #ifndef __WXMSW__
             // On Unix files are case sensitive
             if(nativeFile.Cmp(fileName) == 0 || unixStyleFile.Cmp(fileName) == 0 ||
-               unixStyleFile.Cmp(fileNameDest) == 0)
+                unixStyleFile.Cmp(fileNameDest) == 0)
 #else
             // Compare in no case sensitive manner
             if(nativeFile.CmpNoCase(fileName) == 0 || unixStyleFile.CmpNoCase(fileName) == 0 ||
-               unixStyleFile.CmpNoCase(fileNameDest) == 0)
+                unixStyleFile.CmpNoCase(fileNameDest) == 0)
 #endif
             {
                 return editor;
@@ -502,12 +501,9 @@ static bool IsFileExists(const wxFileName& filename)
 #endif
 }
 
-LEditor* MainBook::OpenFile(const wxString& file_name,
-                            const wxString& projectName,
-                            int lineno,
-                            long position,
-                            OF_extra extra /*=OF_AddJump*/,
-                            bool preserveSelection /*=true*/)
+LEditor* MainBook::OpenFile(const wxString& file_name, const wxString& projectName, int lineno, long position,
+    OF_extra extra /*=OF_AddJump*/, bool preserveSelection /*=true*/, const wxBitmap& bmp /*= wxNullBitmap*/,
+    const wxString& tooltip /* wxEmptyString */)
 {
     wxFileName fileName(file_name);
     fileName.MakeAbsolute();
@@ -564,13 +560,15 @@ LEditor* MainBook::OpenFile(const wxString& file_name,
         if(m_book->GetPageCount() == 0) hidden = GetSizer()->Hide(m_book);
 
         editor = new LEditor(m_book);
+        editor->SetEditorBitmap(bmp);
         editor->Create(projName, fileName);
 
         int sel = m_book->GetSelection();
         if((extra & OF_PlaceNextToCurrent) && (sel != wxNOT_FOUND)) {
-            AddPage(editor, fileName.GetFullName(), fileName.GetFullPath(), wxNullBitmap, false, sel + 1);
+            AddPage(editor, fileName.GetFullName(), tooltip.IsEmpty() ? fileName.GetFullPath() : tooltip, bmp, false,
+                sel + 1);
         } else {
-            AddPage(editor, fileName.GetFullName(), fileName.GetFullPath());
+            AddPage(editor, fileName.GetFullName(), tooltip.IsEmpty() ? fileName.GetFullPath() : tooltip, bmp);
         }
         editor->SetSyntaxHighlight();
 
@@ -635,15 +633,10 @@ LEditor* MainBook::OpenFile(const wxString& file_name,
     return editor;
 }
 
-bool MainBook::AddPage(wxWindow* win,
-                       const wxString& text,
-                       const wxString& tooltip,
-                       const wxBitmap& bmp,
-                       bool selected,
-                       int insert_at_index /*=wxNOT_FOUND*/)
+bool MainBook::AddPage(wxWindow* win, const wxString& text, const wxString& tooltip, const wxBitmap& bmp, bool selected,
+    int insert_at_index /*=wxNOT_FOUND*/)
 {
     if(m_book->GetPageIndex(win) != wxNOT_FOUND) return false;
-
     long MaxBuffers = clConfig::Get().Read(kConfigMaxOpenedTabs, 15);
     bool closeLastTab = ((long)(m_book->GetPageCount()) >= MaxBuffers) && GetUseBuffereLimit();
     if(insert_at_index == wxNOT_FOUND) {
@@ -688,10 +681,8 @@ bool MainBook::SelectPage(wxWindow* win)
     return DoSelectPage(win);
 }
 
-bool MainBook::UserSelectFiles(std::vector<std::pair<wxFileName, bool> >& files,
-                               const wxString& title,
-                               const wxString& caption,
-                               bool cancellable)
+bool MainBook::UserSelectFiles(
+    std::vector<std::pair<wxFileName, bool> >& files, const wxString& title, const wxString& caption, bool cancellable)
 {
     if(files.empty()) return true;
 
@@ -723,9 +714,8 @@ bool MainBook::SaveAll(bool askUser, bool includeUntitled)
     }
     editors.resize(n);
 
-    bool res = !askUser || UserSelectFiles(files,
-                                           _("Save Modified Files"),
-                                           _("Some files are modified.\nChoose the files you would like to save."));
+    bool res = !askUser || UserSelectFiles(files, _("Save Modified Files"),
+                               _("Some files are modified.\nChoose the files you would like to save."));
     if(res) {
         for(size_t i = 0; i < files.size(); i++) {
             if(files[i].second) {
@@ -800,11 +790,8 @@ void MainBook::ReloadExternallyModified(bool prompt)
         }
 
         if(res == FilesModifiedDlg::kID_BUTTON_CHOOSE) {
-            UserSelectFiles(
-                files,
-                _("Reload Modified Files"),
-                _("Files have been modified outside the editor.\nChoose which files you would like to reload."),
-                false);
+            UserSelectFiles(files, _("Reload Modified Files"),
+                _("Files have been modified outside the editor.\nChoose which files you would like to reload."), false);
         }
     }
 
@@ -895,10 +882,8 @@ bool MainBook::CloseAll(bool cancellable)
     }
     editors.resize(n);
 
-    if(!UserSelectFiles(files,
-                        _("Save Modified Files"),
-                        _("Some files are modified.\nChoose the files you would like to save."),
-                        cancellable))
+    if(!UserSelectFiles(files, _("Save Modified Files"),
+           _("Some files are modified.\nChoose the files you would like to save."), cancellable))
         return false;
 
     for(size_t i = 0; i < files.size(); i++) {
@@ -1056,20 +1041,22 @@ void MainBook::MarkEditorReadOnly(LEditor* editor)
     if(readOnly && editor->GetModify()) {
         // an attempt to mark a modified file as read-only
         // ask the user to save his changes before
-        ::wxMessageBox(_("Please save your changes before marking the file as read only"),
-                       "CodeLite",
-                       wxOK | wxCENTER | wxICON_WARNING,
-                       this);
+        ::wxMessageBox(_("Please save your changes before marking the file as read only"), "CodeLite",
+            wxOK | wxCENTER | wxICON_WARNING, this);
         return;
     }
+    
 #if !CL_USE_NATIVEBOOK
+    wxBitmap lockBmp = ::clGetManager()->GetStdIcons()->LoadBitmap("lock");
     for(size_t i = 0; i < m_book->GetPageCount(); i++) {
+        wxBitmap orig_bmp = editor->GetEditorBitmap();
         if(editor == m_book->GetPage(i)) {
-            m_book->SetPageBitmap(i, readOnly ? wxXmlResource::Get()->LoadBitmap(wxT("read_only")) : wxNullBitmap);
+            m_book->SetPageBitmap(i, readOnly ? lockBmp : orig_bmp);
             break;
         }
     }
 #endif
+
 }
 
 long MainBook::GetBookStyle() { return 0; }
@@ -1108,13 +1095,8 @@ bool MainBook::DoSelectPage(wxWindow* win)
     return true;
 }
 
-void MainBook::ShowMessage(const wxString& message,
-                           bool showHideButton,
-                           const wxBitmap& bmp,
-                           const ButtonDetails& btn1,
-                           const ButtonDetails& btn2,
-                           const ButtonDetails& btn3,
-                           const CheckboxDetails& cb)
+void MainBook::ShowMessage(const wxString& message, bool showHideButton, const wxBitmap& bmp, const ButtonDetails& btn1,
+    const ButtonDetails& btn2, const ButtonDetails& btn3, const CheckboxDetails& cb)
 {
     m_messagePane->ShowMessage(message, showHideButton, bmp, btn1, btn2, btn3, cb);
     clMainFrame::Get()->SendSizeEvent();

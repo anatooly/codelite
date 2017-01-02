@@ -518,14 +518,13 @@ void CMakePlugin::OnWorkspaceContextMenu(clContextMenuEvent& event)
     wxFileName workspaceFile = clCxxWorkspaceST::Get()->GetFileName();
     workspaceFile.SetFullName(CMAKELISTS_FILE);
 
-    menu->InsertSeparator(0);
+    menu->AppendSeparator();
     if(workspaceFile.FileExists()) {
         wxMenuItem* item = new wxMenuItem(NULL, XRCID("cmake_open_active_project_cmake"), _("Open CMakeLists.txt"));
         item->SetBitmap(m_mgr->GetStdIcons()->LoadBitmap("cmake"));
-        menu->Insert(0, item);
+        menu->Append(item);
     }
-    menu->Insert(0, XRCID("cmake_export_active_project"), _("Export CMakeLists.txt"));
-
+    menu->Append(XRCID("cmake_export_active_project"), _("Export CMakeLists.txt"));
     menu->Bind(wxEVT_MENU, &CMakePlugin::OnOpenCMakeLists, this, XRCID("cmake_open_active_project_cmake"));
     menu->Bind(wxEVT_MENU, &CMakePlugin::OnExportCMakeLists, this, XRCID("cmake_export_active_project"));
 }
@@ -575,8 +574,12 @@ void CMakePlugin::DoRunCMake(ProjectPtr p)
         generator.Generate(p);
     }
 
-    const wxString& args = buildConf->GetBuildSystemArguments();
+    wxString args = buildConf->GetBuildSystemArguments();
+    
+    // Expand CodeLite macros
+    args = MacroManager::Instance()->Expand(args, m_mgr, p->GetName(), buildConf->GetName());
     wxString cmakeExe = GetCMake()->GetPath().GetFullPath();
+    
     // Did the user provide a generator to use?
     bool hasGeneratorInArgs = (args.Find(" -G") != wxNOT_FOUND);
 

@@ -119,7 +119,6 @@ clAuiDockArt::DrawCaption(wxDC& dc, wxWindow* window, const wxString& text, cons
     textColour = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
     bgColour = DrawingUtils::DarkColour(wxSystemSettings::GetColour(wxSYS_COLOUR_3DFACE), 2.0);
     ; // Same as the notebook background colour
-    penColour = wxSystemSettings::GetColour(wxSYS_COLOUR_3DSHADOW);
     penColour = bgColour;
 
     wxFont f = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
@@ -181,9 +180,8 @@ clAuiDockArt::DrawCaption(wxDC& dc, wxWindow* window, const wxString& text, cons
         // Prepare the colours
         wxColour bgColour, penColour, textColour;
         textColour = wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
-        bgColour = DrawingUtils::DarkColour(wxSystemSettings::GetColour(wxSYS_COLOUR_3DFACE), 2.0);
+        bgColour = wxSystemSettings::GetColour(wxSYS_COLOUR_3DFACE).ChangeLightness(80);
         // Same as the notebook background colour
-        penColour = wxSystemSettings::GetColour(wxSYS_COLOUR_3DSHADOW);
         penColour = bgColour;
 
         wxFont f = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);

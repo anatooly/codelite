@@ -62,7 +62,7 @@ class WXDLLIMPEXP_SDK ProjectItem
 {
 public:
     // The visible items
-    enum { TypeVirtualDirectory, TypeProject, TypeFile, TypeWorkspace };
+    enum { TypeVirtualDirectory, TypeProject, TypeFile, TypeWorkspace, TypeWorkspaceFolder };
 
 public:
     wxString m_key;
@@ -177,6 +177,8 @@ private:
     clCxxWorkspace* m_workspace;
     ProjectSettingsPtr m_settings;
     wxString m_iconPath; /// Not serializable
+    wxArrayString m_cachedIncludePaths;
+    wxString m_workspaceFolder; // The folder in which this project is contained. Separated by "/"
 
 private:
     void DoUpdateProjectSettings();
@@ -231,6 +233,16 @@ public:
      * If no workspace is associated, then the global workspace is returned
      */
     clCxxWorkspace* GetWorkspace();
+    
+    /**
+     * @brief return the XML version
+     */
+    wxString GetVersion() const;
+    
+    /**
+     * @brief clear the include path cache
+     */
+    void ClearIncludePathCache();
 
     /**
      * @brief a project was renamed - update our dependeices if needed
@@ -584,7 +596,7 @@ public:
      * The include paths are returned as an array in the order they appear in the
      * project settings
      */
-    wxArrayString GetIncludePaths(bool clearCache = false);
+    wxArrayString GetIncludePaths();
 
     /**
      * @brief return the pre-processors for this project.
@@ -648,6 +660,9 @@ public:
      * @brief add this project files into the 'compile_commands' json object
      */
     void CreateCompileCommandsJSON(JSONElement& compile_commands);
+
+    void SetWorkspaceFolder(const wxString& workspaceFolders) { this->m_workspaceFolder = workspaceFolders; }
+    const wxString& GetWorkspaceFolder() const { return m_workspaceFolder; }
 
     /**
      * @brief return the build configuration

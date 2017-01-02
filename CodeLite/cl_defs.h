@@ -32,8 +32,13 @@
 #include <wx/version.h>
 
 #define clToolBar wxAuiToolBar
+#ifdef __WXMSW__
+#define clTB_DEFAULT_STYLE wxAUI_TB_PLAIN_BACKGROUND
+#define clTB_DEFAULT_STYLE_PLUGIN wxAUI_TB_PLAIN_BACKGROUND
+#else
 #define clTB_DEFAULT_STYLE wxAUI_TB_DEFAULT_STYLE
 #define clTB_DEFAULT_STYLE_PLUGIN wxAUI_TB_DEFAULT_STYLE
+#endif
 #define USE_AUI_TOOLBAR 1
 
 // Defaults
@@ -48,13 +53,13 @@
 #else
 #ifdef USE_POSIX_LAYOUT
 #ifndef PLUGINS_DIR
-#define PLUGINS_DIR "/lib/codelite"
+#define PLUGINS_DIR "\\lib\\codelite"
 #endif
 #ifndef INSTALL_DIR
-#define INSTALL_DIR "/share/codelite"
+#define INSTALL_DIR "\\share\\codelite"
 #endif
 #ifndef CFGDIR
-#define CFGDIR "/share/codelite/config/cfg"
+#define CFGDIR "\\share\\codelite\\config\\cfg"
 #endif
 #endif
 // MSW / OSX and the rest of the world

@@ -57,6 +57,40 @@
 #include <gtk/gtk.h>
 #undef GSocket
 #endif
+
+static void RGBtoHSB(int r, int g, int b, float* h, float* s, float* br)
+{
+    float hue, saturation, brightness;
+    int cmax = (r > g) ? r : g;
+    if(b > cmax) cmax = b;
+    int cmin = (r < g) ? r : g;
+    if(b < cmin) cmin = b;
+
+    brightness = ((float)cmax) / 255.0f;
+    if(cmax != 0)
+        saturation = ((float)(cmax - cmin)) / ((float)cmax);
+    else
+        saturation = 0;
+    if(saturation == 0)
+        hue = 0;
+    else {
+        float redc = ((float)(cmax - r)) / ((float)(cmax - cmin));
+        float greenc = ((float)(cmax - g)) / ((float)(cmax - cmin));
+        float bluec = ((float)(cmax - b)) / ((float)(cmax - cmin));
+        if(r == cmax)
+            hue = bluec - greenc;
+        else if(g == cmax)
+            hue = 2.0f + redc - bluec;
+        else
+            hue = 4.0f + greenc - redc;
+        hue = hue / 6.0f;
+        if(hue < 0) hue = hue + 1.0f;
+    }
+    (*h) = hue;
+    (*s) = saturation;
+    (*br) = brightness;
+}
+
 //////////////////////////////////////////////////
 // Colour methods to convert HSL <-> RGB
 //////////////////////////////////////////////////
@@ -196,11 +230,8 @@ void DrawingUtils::TruncateText(const wxString& text, int maxWidth, wxDC& dc, wx
     }
 }
 
-void DrawingUtils::PaintStraightGradientBox(wxDC& dc,
-                                            const wxRect& rect,
-                                            const wxColour& startColor,
-                                            const wxColour& endColor,
-                                            bool vertical)
+void DrawingUtils::PaintStraightGradientBox(
+    wxDC& dc, const wxRect& rect, const wxColour& startColor, const wxColour& endColor, bool vertical)
 {
     int rd, gd, bd, high = 0;
     rd = endColor.Red() - startColor.Red();
@@ -237,12 +268,8 @@ void DrawingUtils::PaintStraightGradientBox(wxDC& dc,
     dc.SetBrush(savedBrush);
 }
 
-void DrawingUtils::DrawVerticalButton(wxDC& dc,
-                                      const wxRect& rect,
-                                      const bool& focus,
-                                      const bool& leftTabs,
-                                      bool vertical,
-                                      bool hover)
+void DrawingUtils::DrawVerticalButton(
+    wxDC& dc, const wxRect& rect, const bool& focus, const bool& leftTabs, bool vertical, bool hover)
 {
     wxColour lightGray = GetGradient();
 
@@ -278,12 +305,8 @@ void DrawingUtils::DrawVerticalButton(wxDC& dc,
     dc.SetBrush(*wxTRANSPARENT_BRUSH);
 }
 
-void DrawingUtils::DrawHorizontalButton(wxDC& dc,
-                                        const wxRect& rect,
-                                        const bool& focus,
-                                        const bool& upperTabs,
-                                        bool vertical,
-                                        bool hover)
+void DrawingUtils::DrawHorizontalButton(
+    wxDC& dc, const wxRect& rect, const bool& focus, const bool& upperTabs, bool vertical, bool hover)
 {
     wxColour lightGray = GetGradient();
     wxColour topStartColor(wxT("WHITE"));
@@ -323,10 +346,9 @@ void DrawingUtils::DrawHorizontalButton(wxDC& dc,
 
 bool DrawingUtils::IsDark(const wxColour& color)
 {
-    int evg = (color.Red() + color.Green() + color.Blue()) / 3;
-    if(evg < 127) return true;
-
-    return false;
+    float h, s, b;
+    RGBtoHSB(color.Red(), color.Green(), color.Blue(), &h, &s, &b);
+    return (b < 0.5);
 }
 
 float DrawingUtils::GetDdkShadowLightFactor()
@@ -685,7 +707,7 @@ wxFont DrawingUtils::GetDefaultFixedFont()
     return wxFont(wxFontInfo(DEFAULT_FONT_SIZE).Family(wxFONTFAMILY_TELETYPE).FaceName(DEFAULT_FACE_NAME));
 }
 
-clColourPalette DrawingUtils::GetColourPalette() 
+clColourPalette DrawingUtils::GetColourPalette()
 {
     // basic dark colours
     clColourPalette palette;
@@ -694,7 +716,7 @@ clColourPalette DrawingUtils::GetColourPalette()
     palette.selecteTextColour = *wxWHITE;
     palette.selectionBgColour = wxColour("rgb(87, 87, 87)");
     palette.textColour = wxColour("rgb(200, 200, 200)");
-    
+
     if(::clGetManager()) {
         IEditor* editor = ::clGetManager()->GetActiveEditor();
         if(editor && !IsDark(editor->GetCtrl()->StyleGetBackground(0))) {
@@ -704,7 +726,6 @@ clColourPalette DrawingUtils::GetColourPalette()
             palette.selectionBgColour = wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT);
             palette.textColour = wxColour("rgb(0, 0, 0)");
         }
-        
     }
     return palette;
 }

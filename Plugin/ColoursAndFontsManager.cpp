@@ -205,6 +205,11 @@ LexerConf::Ptr_t ColoursAndFontsManager::DoAddLexer(wxXmlNode* node)
         lexer->SetKeyWords(lexer->GetKeyWords(0) + " final", 0);
     }
     
+    // Add C++ keyword "override"
+    if(lexer->GetName() == "c++" && !lexer->GetKeyWords(0).Contains("override")) {
+        lexer->SetKeyWords(lexer->GetKeyWords(0) + " override", 0);
+    }
+    
     // Hack: fix Java lexer which is using the same
     // file extensions as C++...
     if(lexer->GetName() == "java" && lexer->GetFileSpec().Contains(".cpp")) {
@@ -548,12 +553,9 @@ void ColoursAndFontsManager::OnLexerFilesLoaded(const std::vector<wxXmlDocument*
     wxFileName fnUserLexers(clStandardPaths::Get().GetUserDataDir(), "lexers.json");
     fnUserLexers.AppendDir("lexers");
 
-// Default installation lexers
-#ifdef USE_POSIX_LAYOUT
-    wxFileName defaultLexersFileName(clStandardPaths::Get().GetDataDir() + wxT(INSTALL_DIR), "");
-#else
+    // Default installation lexers
     wxFileName defaultLexersFileName(clStandardPaths::Get().GetDataDir(), "");
-#endif
+
     defaultLexersFileName.AppendDir("lexers");
     defaultLexersFileName.SetFullName("lexers.json");
     
@@ -740,6 +742,10 @@ LexerConf::Ptr_t ColoursAndFontsManager::DoAddLexer(JSONElement json)
     
     if(lexer->GetName() == "c++" && !lexer->GetKeyWords(0).Contains("final")) {
         lexer->SetKeyWords(lexer->GetKeyWords(0) + " final", 0);
+    }
+    
+    if(lexer->GetName() == "c++" && !lexer->GetKeyWords(0).Contains("override")) {
+        lexer->SetKeyWords(lexer->GetKeyWords(0) + " override", 0);
     }
     
     // Add Arduino sketches files as C++ (*.ino)

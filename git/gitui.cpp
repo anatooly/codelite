@@ -481,7 +481,7 @@ GitCommitListDlgBase::GitCommitListDlgBase(wxWindow* parent, wxWindowID id, cons
     this->SetSizer(bSizer17);
     
     m_splitter174 = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1,-1)), wxSP_LIVE_UPDATE|wxSP_3DSASH);
-    m_splitter174->SetSashGravity(0);
+    m_splitter174->SetSashGravity(0.7);
     m_splitter174->SetMinimumPaneSize(150);
     
     bSizer17->Add(m_splitter174, 1, wxALL|wxEXPAND, WXC_FROM_DIP(5));
@@ -491,29 +491,61 @@ GitCommitListDlgBase::GitCommitListDlgBase(wxWindow* parent, wxWindowID id, cons
     wxBoxSizer* boxSizer205 = new wxBoxSizer(wxVERTICAL);
     m_splitterPage178->SetSizer(boxSizer205);
     
+    wxBoxSizer* boxSizer449 = new wxBoxSizer(wxVERTICAL);
+    
+    boxSizer205->Add(boxSizer449, 0, wxEXPAND, WXC_FROM_DIP(5));
+    
     wxBoxSizer* boxSizer343 = new wxBoxSizer(wxHORIZONTAL);
     
-    boxSizer205->Add(boxSizer343, 0, wxEXPAND, WXC_FROM_DIP(5));
+    boxSizer449->Add(boxSizer343, 0, wxEXPAND, WXC_FROM_DIP(5));
     
     m_searchCtrlFilter = new wxSearchCtrl(m_splitterPage178, wxID_ANY, wxT(""), wxDefaultPosition, wxDLG_UNIT(m_splitterPage178, wxSize(-1,-1)), wxTE_PROCESS_ENTER);
-    m_searchCtrlFilter->SetToolTip(_("Search the commit list\nThe search is performed on all columns"));
+    m_searchCtrlFilter->SetToolTip(_("Search for specific text in commits.\nThis uses --grep, and so searches only the text of the commit message. To search by author etc, use the 'Extra arguments' box."));
     m_searchCtrlFilter->SetFocus();
     m_searchCtrlFilter->ShowSearchButton(true);
     m_searchCtrlFilter->ShowCancelButton(false);
     
-    boxSizer343->Add(m_searchCtrlFilter, 1, wxALL|wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(2));
+    boxSizer343->Add(m_searchCtrlFilter, 1, wxLEFT|wxRIGHT|wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(2));
     
-    m_button347 = new wxButton(m_splitterPage178, wxID_BACKWARD, _("Previous"), wxDefaultPosition, wxDLG_UNIT(m_splitterPage178, wxSize(-1,-1)), 0);
-    m_button347->SetToolTip(_("Show previous 100 commits"));
+    m_buttonPrevious = new wxButton(m_splitterPage178, wxID_BACKWARD, _("Previous"), wxDefaultPosition, wxDLG_UNIT(m_splitterPage178, wxSize(-1,-1)), 0);
+    m_buttonPrevious->SetToolTip(_("Show previous 100 commits"));
     
-    boxSizer343->Add(m_button347, 0, wxALL, WXC_FROM_DIP(2));
+    boxSizer343->Add(m_buttonPrevious, 0, wxALL, WXC_FROM_DIP(2));
     
     m_buttonNext = new wxButton(m_splitterPage178, wxID_FORWARD, _("Next"), wxDefaultPosition, wxDLG_UNIT(m_splitterPage178, wxSize(-1,-1)), 0);
     m_buttonNext->SetToolTip(_("Fetch the next 100 commits"));
     
     boxSizer343->Add(m_buttonNext, 0, wxALL|wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(2));
     
-    m_dvListCtrlCommitList = new wxDataViewListCtrl(m_splitterPage178, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterPage178, wxSize(500,-1)), wxDV_VERT_RULES|wxDV_ROW_LINES|wxDV_SINGLE);
+    wxBoxSizer* boxSizer451 = new wxBoxSizer(wxHORIZONTAL);
+    
+    boxSizer449->Add(boxSizer451, 0, wxEXPAND, WXC_FROM_DIP(5));
+    
+    m_checkBoxIgnoreCase = new wxCheckBox(m_splitterPage178, wxID_ANY, _("Ignore case"), wxDefaultPosition, wxDLG_UNIT(m_splitterPage178, wxSize(-1,-1)), 0);
+    m_checkBoxIgnoreCase->SetValue(false);
+    m_checkBoxIgnoreCase->SetToolTip(_("--regexp-ignore-case Display commits that match the pattern without regard to case"));
+    
+    boxSizer451->Add(m_checkBoxIgnoreCase, 0, wxALL|wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(5));
+    
+    m_staticText414 = new wxStaticText(m_splitterPage178, wxID_ANY, _("    Extra arguments:"), wxDefaultPosition, wxDLG_UNIT(m_splitterPage178, wxSize(-1,-1)), 0);
+    
+    boxSizer451->Add(m_staticText414, 0, wxALL|wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(5));
+    
+    wxArrayString m_comboExtraArgsArr;
+    m_comboExtraArgsArr.Add(wxT("--since="));
+    m_comboExtraArgsArr.Add(wxT("--before="));
+    m_comboExtraArgsArr.Add(wxT("--author="));
+    m_comboExtraArgsArr.Add(wxT("--committer="));
+    m_comboExtraArgsArr.Add(wxT("-S"));
+    m_comboExtraArgs = new wxComboBox(m_splitterPage178, XRCID("m_comboExtraArgs"), wxT(""), wxDefaultPosition, wxDLG_UNIT(m_splitterPage178, wxSize(-1,-1)), m_comboExtraArgsArr, wxTE_PROCESS_ENTER);
+    m_comboExtraArgs->SetToolTip(_("Optional extra arguments that you wish passed to git log.\nAn example might be: --since=\"2 weeks ago\"\nNote that this is _not_ sanity-checked, it's added just as it is."));
+    #if wxVERSION_NUMBER >= 3000
+    m_comboExtraArgs->SetHint(wxT(""));
+    #endif
+    
+    boxSizer451->Add(m_comboExtraArgs, 1, wxALL, WXC_FROM_DIP(5));
+    
+    m_dvListCtrlCommitList = new wxDataViewListCtrl(m_splitterPage178, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterPage178, wxSize(-1,-1)), wxDV_VERT_RULES|wxDV_ROW_LINES|wxDV_SINGLE);
     
     boxSizer205->Add(m_dvListCtrlCommitList, 1, wxALL|wxEXPAND, WXC_FROM_DIP(2));
     
@@ -522,7 +554,7 @@ GitCommitListDlgBase::GitCommitListDlgBase(wxWindow* parent, wxWindowID id, cons
     m_dvListCtrlCommitList->AppendTextColumn(_("Date"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(100), wxALIGN_LEFT);
     m_dvListCtrlCommitList->AppendTextColumn(_("Subject"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(600), wxALIGN_LEFT);
     m_splitterPage182 = new wxPanel(m_splitter174, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitter174, wxSize(-1,-1)), wxTAB_TRAVERSAL);
-    m_splitter174->SplitHorizontally(m_splitterPage178, m_splitterPage182, 150);
+    m_splitter174->SplitHorizontally(m_splitterPage178, m_splitterPage182, 0);
     
     wxBoxSizer* boxSizer184 = new wxBoxSizer(wxVERTICAL);
     m_splitterPage182->SetSizer(boxSizer184);
@@ -616,7 +648,7 @@ GitCommitListDlgBase::GitCommitListDlgBase(wxWindow* parent, wxWindowID id, cons
     
     boxSizer218->Add(m_staticText220, 0, wxALL, WXC_FROM_DIP(5));
     
-    m_stcCommitMessage = new wxStyledTextCtrl(m_splitterPage194, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterPage194, wxSize(-1,-1)), wxBORDER_THEME);
+    m_stcCommitMessage = new wxStyledTextCtrl(m_splitterPage194, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterPage194, wxSize(-1,200)), wxBORDER_THEME);
     // Configure the fold margin
     m_stcCommitMessage->SetMarginType     (4, wxSTC_MARGIN_SYMBOL);
     m_stcCommitMessage->SetMarginMask     (4, wxSTC_MASK_FOLDERS);
@@ -653,6 +685,7 @@ GitCommitListDlgBase::GitCommitListDlgBase(wxWindow* parent, wxWindowID id, cons
     m_stcCommitMessage->SetKeyWords(4, wxT(""));
     
     boxSizer218->Add(m_stcCommitMessage, 1, wxALL|wxEXPAND, WXC_FROM_DIP(2));
+    m_stcCommitMessage->SetMinSize(wxSize(-1,200));
     
     SetName(wxT("GitCommitListDlgBase"));
     SetSize(-1,-1);
@@ -675,9 +708,11 @@ GitCommitListDlgBase::GitCommitListDlgBase(wxWindow* parent, wxWindowID id, cons
     this->Connect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(GitCommitListDlgBase::OnClose), NULL, this);
     m_searchCtrlFilter->Connect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(GitCommitListDlgBase::OnSearchCommitList), NULL, this);
     m_searchCtrlFilter->Connect(wxEVT_COMMAND_SEARCHCTRL_SEARCH_BTN, wxCommandEventHandler(GitCommitListDlgBase::OnSearchCommitList), NULL, this);
-    m_button347->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(GitCommitListDlgBase::OnPrevious), NULL, this);
-    m_button347->Connect(wxEVT_UPDATE_UI, wxUpdateUIEventHandler(GitCommitListDlgBase::OnPreviousUI), NULL, this);
+    m_buttonPrevious->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(GitCommitListDlgBase::OnPrevious), NULL, this);
+    m_buttonPrevious->Connect(wxEVT_UPDATE_UI, wxUpdateUIEventHandler(GitCommitListDlgBase::OnPreviousUI), NULL, this);
     m_buttonNext->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(GitCommitListDlgBase::OnNext), NULL, this);
+    m_buttonNext->Connect(wxEVT_UPDATE_UI, wxUpdateUIEventHandler(GitCommitListDlgBase::OnNextUpdateUI), NULL, this);
+    m_comboExtraArgs->Connect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(GitCommitListDlgBase::OnExtraArgsTextEnter), NULL, this);
     m_dvListCtrlCommitList->Connect(wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler(GitCommitListDlgBase::OnSelectionChanged), NULL, this);
     m_dvListCtrlCommitList->Connect(wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler(GitCommitListDlgBase::OnContextMenu), NULL, this);
     m_fileListBox->Connect(wxEVT_COMMAND_LISTBOX_SELECTED, wxCommandEventHandler(GitCommitListDlgBase::OnChangeFile), NULL, this);
@@ -689,9 +724,11 @@ GitCommitListDlgBase::~GitCommitListDlgBase()
     this->Disconnect(wxEVT_CLOSE_WINDOW, wxCloseEventHandler(GitCommitListDlgBase::OnClose), NULL, this);
     m_searchCtrlFilter->Disconnect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(GitCommitListDlgBase::OnSearchCommitList), NULL, this);
     m_searchCtrlFilter->Disconnect(wxEVT_COMMAND_SEARCHCTRL_SEARCH_BTN, wxCommandEventHandler(GitCommitListDlgBase::OnSearchCommitList), NULL, this);
-    m_button347->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(GitCommitListDlgBase::OnPrevious), NULL, this);
-    m_button347->Disconnect(wxEVT_UPDATE_UI, wxUpdateUIEventHandler(GitCommitListDlgBase::OnPreviousUI), NULL, this);
+    m_buttonPrevious->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(GitCommitListDlgBase::OnPrevious), NULL, this);
+    m_buttonPrevious->Disconnect(wxEVT_UPDATE_UI, wxUpdateUIEventHandler(GitCommitListDlgBase::OnPreviousUI), NULL, this);
     m_buttonNext->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(GitCommitListDlgBase::OnNext), NULL, this);
+    m_buttonNext->Disconnect(wxEVT_UPDATE_UI, wxUpdateUIEventHandler(GitCommitListDlgBase::OnNextUpdateUI), NULL, this);
+    m_comboExtraArgs->Disconnect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(GitCommitListDlgBase::OnExtraArgsTextEnter), NULL, this);
     m_dvListCtrlCommitList->Disconnect(wxEVT_COMMAND_DATAVIEW_SELECTION_CHANGED, wxDataViewEventHandler(GitCommitListDlgBase::OnSelectionChanged), NULL, this);
     m_dvListCtrlCommitList->Disconnect(wxEVT_COMMAND_DATAVIEW_ITEM_CONTEXT_MENU, wxDataViewEventHandler(GitCommitListDlgBase::OnContextMenu), NULL, this);
     m_fileListBox->Disconnect(wxEVT_COMMAND_LISTBOX_SELECTED, wxCommandEventHandler(GitCommitListDlgBase::OnChangeFile), NULL, this);
@@ -1189,6 +1226,31 @@ GitImages::GitImages()
                 this->Add(icn);
             }
             m_bitmaps.insert(std::make_pair(wxT("gitCommitedFiles@2x"), bmp));
+        }
+    }
+    
+    {
+        wxBitmap bmp;
+        wxIcon icn;
+        bmp = wxXmlResource::Get()->LoadBitmap(wxT("gitBlame"));
+        if(bmp.IsOk()) {
+            if((m_imagesWidth == bmp.GetWidth()) && (m_imagesHeight == bmp.GetHeight())){
+                icn.CopyFromBitmap(bmp);
+                this->Add(icn);
+            }
+            m_bitmaps.insert(std::make_pair(wxT("gitBlame"), bmp));
+        }
+    }
+    {
+        wxBitmap bmp;
+        wxIcon icn;
+        bmp = wxXmlResource::Get()->LoadBitmap(wxT("gitBlame@2x"));
+        if(bmp.IsOk()) {
+            if((m_imagesWidth == bmp.GetWidth()) && (m_imagesHeight == bmp.GetHeight())){
+                icn.CopyFromBitmap(bmp);
+                this->Add(icn);
+            }
+            m_bitmaps.insert(std::make_pair(wxT("gitBlame@2x"), bmp));
         }
     }
     
@@ -1848,4 +1910,371 @@ GitConsoleBase::~GitConsoleBase()
     m_dvFiles->Disconnect(wxEVT_COMMAND_DATAVIEW_ITEM_ACTIVATED, wxDataViewEventHandler(GitConsoleBase::OnFileActivated), NULL, this);
     m_stcLog->Disconnect(wxEVT_STC_CHANGE, wxStyledTextEventHandler(GitConsoleBase::OnStclogStcChange), NULL, this);
     
+}
+
+GitBlameDlgBase::GitBlameDlgBase(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style)
+    : wxDialog(parent, id, title, pos, size, style)
+{
+    if ( !bBitmapLoaded ) {
+        // We need to initialise the default bitmap handler
+        wxXmlResource::Get()->AddHandler(new wxBitmapXmlHandler);
+        wxCrafterpca4kKInitBitmapResources();
+        bBitmapLoaded = true;
+    }
+    // Set icon(s) to the application/dialog
+    wxIconBundle app_icons;
+    {
+        wxBitmap iconBmp = wxXmlResource::Get()->LoadBitmap(wxT("16-git"));
+        wxIcon icn;
+        icn.CopyFromBitmap(iconBmp);
+        app_icons.AddIcon( icn );
+    }
+    {
+        wxBitmap iconBmp = wxXmlResource::Get()->LoadBitmap(wxT("16-git@2x"));
+        wxIcon icn;
+        icn.CopyFromBitmap(iconBmp);
+        app_icons.AddIcon( icn );
+    }
+    SetIcons( app_icons );
+
+    
+    wxBoxSizer* boxSizer374 = new wxBoxSizer(wxVERTICAL);
+    this->SetSizer(boxSizer374);
+    
+    m_auibar436 = new wxAuiToolBar(this, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1,-1)), wxAUI_TB_PLAIN_BACKGROUND|wxAUI_TB_DEFAULT_STYLE);
+    m_auibar436->SetToolBitmapSize(wxSize(16,16));
+    
+    boxSizer374->Add(m_auibar436, 0, wxEXPAND, WXC_FROM_DIP(5));
+    
+    m_auibar436->AddTool(XRCID("m_tbBack"), _("Previous"), wxXmlResource::Get()->LoadBitmap(wxT("24-back")), wxNullBitmap, wxITEM_NORMAL, _("Go backwards to earlier commit's blame"), _("Show earlier commit's blame"), NULL);
+    
+    m_auibar436->AddTool(XRCID("m_tbForward"), _("Next"), wxXmlResource::Get()->LoadBitmap(wxT("24-forward")), wxNullBitmap, wxITEM_NORMAL, _("Go forward to more-recent commit's blame"), _("Show next-seen commit's blame"), NULL);
+    
+    wxArrayString m_choiceHistoryArr;
+    m_choiceHistoryArr.Add(wxT("abcd4444 (HEAD)"));
+    m_choiceHistory = new wxChoice(m_auibar436, XRCID("m_choiceHistory"), wxDefaultPosition, wxDLG_UNIT(m_auibar436, wxSize(-1,-1)), m_choiceHistoryArr, 0);
+    m_choiceHistory->SetToolTip(_("Previously-visited commits. Note that these are listed in the order that you visited them, not commit-date order."));
+    m_auibar436->AddControl(m_choiceHistory);
+    
+    m_staticText414 = new wxStaticText(m_auibar436, wxID_ANY, _("    Extra arguments:"), wxDefaultPosition, wxDLG_UNIT(m_auibar436, wxSize(-1,-1)), 0);
+    m_auibar436->AddControl(m_staticText414);
+    
+    wxArrayString m_comboExtraArgsArr;
+    m_comboExtraArgsArr.Add(wxT("-L 123,130 foo bar"));
+    m_comboExtraArgs = new wxComboBox(m_auibar436, XRCID("m_comboExtraArgs"), wxT(""), wxDefaultPosition, wxDLG_UNIT(m_auibar436, wxSize(-1,-1)), m_comboExtraArgsArr, wxTE_PROCESS_ENTER);
+    m_comboExtraArgs->SetToolTip(_("Optional extra arguments that you wish passed to git blame.\nAn example might be: -L 100,130\nNote that this is _not_ sanity-checked, it's added just as it is."));
+    #if wxVERSION_NUMBER >= 3000
+    m_comboExtraArgs->SetHint(wxT(""));
+    #endif
+    m_auibar436->AddControl(m_comboExtraArgs);
+    
+    m_auibar436->AddTool(XRCID("m_toolbarItemRefresh"), _("Refresh"), wxXmlResource::Get()->LoadBitmap(wxT("24-debugger_restart")), wxNullBitmap, wxITEM_NORMAL, _("Redo the current commit's blame"), _("Redo the current commit's blame"), NULL);
+    
+    m_auibar436->AddStretchSpacer(1);
+    
+    m_auibar436->AddTool(XRCID("m_toolbarItemSettings"), _("Settings"), wxXmlResource::Get()->LoadBitmap(wxT("24-cog")), wxNullBitmap, wxITEM_NORMAL, _("Settings"), wxT(""), NULL);
+    m_auibar436->Realize();
+    
+    m_splitterMain = new wxSplitterWindow(this, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1,-1)), wxSP_LIVE_UPDATE|wxSP_3DSASH);
+    m_splitterMain->SetSashGravity(0.3);
+    m_splitterMain->SetMinimumPaneSize(100);
+    
+    boxSizer374->Add(m_splitterMain, 1, wxALL|wxEXPAND, WXC_FROM_DIP(5));
+    
+    m_splitterPageTop = new wxPanel(m_splitterMain, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterMain, wxSize(-1,-1)), wxTAB_TRAVERSAL);
+    
+    wxBoxSizer* boxSizer205 = new wxBoxSizer(wxVERTICAL);
+    m_splitterPageTop->SetSizer(boxSizer205);
+    
+    m_stcBlame = new wxStyledTextCtrl(m_splitterPageTop, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterPageTop, wxSize(-1,-1)), 0);
+    // Configure the fold margin
+    m_stcBlame->SetMarginType     (4, wxSTC_MARGIN_SYMBOL);
+    m_stcBlame->SetMarginMask     (4, wxSTC_MASK_FOLDERS);
+    m_stcBlame->SetMarginSensitive(4, true);
+    m_stcBlame->SetMarginWidth    (4, 0);
+    
+    // Configure the tracker margin
+    m_stcBlame->SetMarginWidth(1, 0);
+    
+    // Configure the symbol margin
+    m_stcBlame->SetMarginType (2, wxSTC_MARGIN_SYMBOL);
+    m_stcBlame->SetMarginMask (2, ~(wxSTC_MASK_FOLDERS));
+    m_stcBlame->SetMarginWidth(2, 0);
+    m_stcBlame->SetMarginSensitive(2, true);
+    
+    // Configure the line numbers margin
+    m_stcBlame->SetMarginType(0, wxSTC_MARGIN_NUMBER);
+    m_stcBlame->SetMarginWidth(0,0);
+    
+    // Configure the line symbol margin
+    m_stcBlame->SetMarginType(3, wxSTC_MARGIN_FORE);
+    m_stcBlame->SetMarginMask(3, 0);
+    m_stcBlame->SetMarginWidth(3,0);
+    // Select the lexer
+    m_stcBlame->SetLexer(wxSTC_LEX_NULL);
+    // Set default font / styles
+    m_stcBlame->StyleClearAll();
+    m_stcBlame->SetWrapMode(0);
+    m_stcBlame->SetIndentationGuides(0);
+    m_stcBlame->SetKeyWords(0, wxT(""));
+    m_stcBlame->SetKeyWords(1, wxT(""));
+    m_stcBlame->SetKeyWords(2, wxT(""));
+    m_stcBlame->SetKeyWords(3, wxT(""));
+    m_stcBlame->SetKeyWords(4, wxT(""));
+    
+    boxSizer205->Add(m_stcBlame, 1, wxALL|wxEXPAND, WXC_FROM_DIP(5));
+    
+    m_splitterPageBottom = new wxPanel(m_splitterMain, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterMain, wxSize(-1,-1)), wxTAB_TRAVERSAL);
+    m_splitterMain->SplitHorizontally(m_splitterPageTop, m_splitterPageBottom, 0);
+    
+    wxBoxSizer* boxSizer184 = new wxBoxSizer(wxVERTICAL);
+    m_splitterPageBottom->SetSizer(boxSizer184);
+    
+    m_splitterH = new wxSplitterWindow(m_splitterPageBottom, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterPageBottom, wxSize(-1,-1)), wxSP_LIVE_UPDATE|wxSP_3DSASH);
+    m_splitterH->SetSashGravity(0.5);
+    m_splitterH->SetMinimumPaneSize(10);
+    
+    boxSizer184->Add(m_splitterH, 1, wxEXPAND, WXC_FROM_DIP(2));
+    
+    m_splitterPage194 = new wxPanel(m_splitterH, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterH, wxSize(-1,-1)), wxTAB_TRAVERSAL);
+    
+    wxBoxSizer* boxSizer218 = new wxBoxSizer(wxVERTICAL);
+    m_splitterPage194->SetSizer(boxSizer218);
+    
+    m_staticText220 = new wxStaticText(m_splitterPage194, wxID_ANY, _("Commit message:"), wxDefaultPosition, wxDLG_UNIT(m_splitterPage194, wxSize(-1,-1)), 0);
+    
+    boxSizer218->Add(m_staticText220, 0, wxALL, WXC_FROM_DIP(5));
+    
+    m_stcCommitMessage = new wxStyledTextCtrl(m_splitterPage194, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterPage194, wxSize(-1,-1)), wxBORDER_THEME);
+    // Configure the fold margin
+    m_stcCommitMessage->SetMarginType     (4, wxSTC_MARGIN_SYMBOL);
+    m_stcCommitMessage->SetMarginMask     (4, wxSTC_MASK_FOLDERS);
+    m_stcCommitMessage->SetMarginSensitive(4, true);
+    m_stcCommitMessage->SetMarginWidth    (4, 0);
+    
+    // Configure the tracker margin
+    m_stcCommitMessage->SetMarginWidth(1, 0);
+    
+    // Configure the symbol margin
+    m_stcCommitMessage->SetMarginType (2, wxSTC_MARGIN_SYMBOL);
+    m_stcCommitMessage->SetMarginMask (2, ~(wxSTC_MASK_FOLDERS));
+    m_stcCommitMessage->SetMarginWidth(2, 0);
+    m_stcCommitMessage->SetMarginSensitive(2, true);
+    
+    // Configure the line numbers margin
+    m_stcCommitMessage->SetMarginType(0, wxSTC_MARGIN_NUMBER);
+    m_stcCommitMessage->SetMarginWidth(0,0);
+    
+    // Configure the line symbol margin
+    m_stcCommitMessage->SetMarginType(3, wxSTC_MARGIN_FORE);
+    m_stcCommitMessage->SetMarginMask(3, 0);
+    m_stcCommitMessage->SetMarginWidth(3,0);
+    // Select the lexer
+    m_stcCommitMessage->SetLexer(wxSTC_LEX_NULL);
+    // Set default font / styles
+    m_stcCommitMessage->StyleClearAll();
+    m_stcCommitMessage->SetWrapMode(0);
+    m_stcCommitMessage->SetIndentationGuides(0);
+    m_stcCommitMessage->SetKeyWords(0, wxT(""));
+    m_stcCommitMessage->SetKeyWords(1, wxT(""));
+    m_stcCommitMessage->SetKeyWords(2, wxT(""));
+    m_stcCommitMessage->SetKeyWords(3, wxT(""));
+    m_stcCommitMessage->SetKeyWords(4, wxT(""));
+    
+    boxSizer218->Add(m_stcCommitMessage, 1, wxALL|wxEXPAND, WXC_FROM_DIP(2));
+    
+    m_splitterPage190 = new wxPanel(m_splitterH, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterH, wxSize(-1,-1)), wxTAB_TRAVERSAL);
+    m_splitterH->SplitHorizontally(m_splitterPage194, m_splitterPage190, 0);
+    
+    wxBoxSizer* bSizer18 = new wxBoxSizer(wxHORIZONTAL);
+    m_splitterPage190->SetSizer(bSizer18);
+    
+    m_splitterV = new wxSplitterWindow(m_splitterPage190, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterPage190, wxSize(-1,-1)), wxSP_LIVE_UPDATE|wxSP_3DSASH);
+    m_splitterV->SetSashGravity(0);
+    m_splitterV->SetMinimumPaneSize(100);
+    
+    bSizer18->Add(m_splitterV, 1, wxEXPAND, WXC_FROM_DIP(2));
+    
+    m_splitterPage200 = new wxPanel(m_splitterV, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterV, wxSize(-1,-1)), wxTAB_TRAVERSAL);
+    
+    wxBoxSizer* boxSizer208 = new wxBoxSizer(wxVERTICAL);
+    m_splitterPage200->SetSizer(boxSizer208);
+    
+    m_staticText210 = new wxStaticText(m_splitterPage200, wxID_ANY, _("Modified files:"), wxDefaultPosition, wxDLG_UNIT(m_splitterPage200, wxSize(-1,-1)), 0);
+    
+    boxSizer208->Add(m_staticText210, 0, wxALL, WXC_FROM_DIP(5));
+    
+    wxArrayString m_fileListBoxArr;
+    m_fileListBox = new wxListBox(m_splitterPage200, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterPage200, wxSize(-1, -1)), m_fileListBoxArr, 0);
+    
+    boxSizer208->Add(m_fileListBox, 1, wxALL|wxEXPAND, WXC_FROM_DIP(2));
+    
+    m_splitterPage204 = new wxPanel(m_splitterV, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterV, wxSize(-1,-1)), wxTAB_TRAVERSAL);
+    m_splitterV->SplitVertically(m_splitterPage200, m_splitterPage204, 0);
+    
+    wxBoxSizer* boxSizer215 = new wxBoxSizer(wxVERTICAL);
+    m_splitterPage204->SetSizer(boxSizer215);
+    
+    m_staticText217 = new wxStaticText(m_splitterPage204, wxID_ANY, _("Diff:"), wxDefaultPosition, wxDLG_UNIT(m_splitterPage204, wxSize(-1,-1)), 0);
+    
+    boxSizer215->Add(m_staticText217, 0, wxALL, WXC_FROM_DIP(5));
+    
+    m_stcDiff = new wxStyledTextCtrl(m_splitterPage204, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_splitterPage204, wxSize(-1,-1)), wxBORDER_THEME);
+    // Configure the fold margin
+    m_stcDiff->SetMarginType     (4, wxSTC_MARGIN_SYMBOL);
+    m_stcDiff->SetMarginMask     (4, wxSTC_MASK_FOLDERS);
+    m_stcDiff->SetMarginSensitive(4, true);
+    m_stcDiff->SetMarginWidth    (4, 0);
+    
+    // Configure the tracker margin
+    m_stcDiff->SetMarginWidth(1, 0);
+    
+    // Configure the symbol margin
+    m_stcDiff->SetMarginType (2, wxSTC_MARGIN_SYMBOL);
+    m_stcDiff->SetMarginMask (2, ~(wxSTC_MASK_FOLDERS));
+    m_stcDiff->SetMarginWidth(2, 0);
+    m_stcDiff->SetMarginSensitive(2, true);
+    
+    // Configure the line numbers margin
+    m_stcDiff->SetMarginType(0, wxSTC_MARGIN_NUMBER);
+    m_stcDiff->SetMarginWidth(0,0);
+    
+    // Configure the line symbol margin
+    m_stcDiff->SetMarginType(3, wxSTC_MARGIN_FORE);
+    m_stcDiff->SetMarginMask(3, 0);
+    m_stcDiff->SetMarginWidth(3,0);
+    // Select the lexer
+    m_stcDiff->SetLexer(wxSTC_LEX_DIFF);
+    // Set default font / styles
+    m_stcDiff->StyleClearAll();
+    m_stcDiff->SetWrapMode(0);
+    m_stcDiff->SetIndentationGuides(0);
+    m_stcDiff->SetKeyWords(0, wxT(""));
+    m_stcDiff->SetKeyWords(1, wxT(""));
+    m_stcDiff->SetKeyWords(2, wxT(""));
+    m_stcDiff->SetKeyWords(3, wxT(""));
+    m_stcDiff->SetKeyWords(4, wxT(""));
+    
+    boxSizer215->Add(m_stcDiff, 1, wxALL|wxEXPAND, WXC_FROM_DIP(2));
+    
+    m_stdBtnSizer306 = new wxStdDialogButtonSizer();
+    
+    boxSizer374->Add(m_stdBtnSizer306, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, WXC_FROM_DIP(5));
+    
+    m_button308 = new wxButton(this, wxID_CLOSE, wxT(""), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, -1)), 0);
+    m_button308->SetDefault();
+    m_stdBtnSizer306->AddButton(m_button308);
+    m_stdBtnSizer306->Realize();
+    
+    SetName(wxT("GitBlameDlgBase"));
+    SetSize(-1,-1);
+    if (GetSizer()) {
+         GetSizer()->Fit(this);
+    }
+    if(GetParent()) {
+        CentreOnParent(wxBOTH);
+    } else {
+        CentreOnScreen(wxBOTH);
+    }
+#if wxVERSION_NUMBER >= 2900
+    if(!wxPersistenceManager::Get().Find(this)) {
+        wxPersistenceManager::Get().RegisterAndRestore(this);
+    } else {
+        wxPersistenceManager::Get().Restore(this);
+    }
+#endif
+    // Connect events
+    this->Connect(XRCID("m_tbBack"), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(GitBlameDlgBase::OnPreviousBlame), NULL, this);
+    this->Connect(XRCID("m_tbBack"), wxEVT_UPDATE_UI, wxUpdateUIEventHandler(GitBlameDlgBase::OnBackUpdateUI), NULL, this);
+    this->Connect(XRCID("m_tbForward"), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(GitBlameDlgBase::OnNextBlame), NULL, this);
+    this->Connect(XRCID("m_tbForward"), wxEVT_UPDATE_UI, wxUpdateUIEventHandler(GitBlameDlgBase::OnForwardUpdateUI), NULL, this);
+    m_choiceHistory->Connect(wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler(GitBlameDlgBase::OnHistoryItemSelected), NULL, this);
+    m_comboExtraArgs->Connect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(GitBlameDlgBase::OnExtraArgsTextEnter), NULL, this);
+    this->Connect(XRCID("m_toolbarItemRefresh"), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(GitBlameDlgBase::OnRefreshBlame), NULL, this);
+    this->Connect(XRCID("m_toolbarItemSettings"), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(GitBlameDlgBase::OnSettings), NULL, this);
+    m_stcBlame->Connect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(GitBlameDlgBase::OnStcblameLeftDclick), NULL, this);
+    m_stcBlame->Connect(wxEVT_LEFT_DOWN, wxMouseEventHandler(GitBlameDlgBase::OnSelectionChanged), NULL, this);
+    m_fileListBox->Connect(wxEVT_COMMAND_LISTBOX_SELECTED, wxCommandEventHandler(GitBlameDlgBase::OnChangeFile), NULL, this);
+    m_button308->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(GitBlameDlgBase::OnCloseDialog), NULL, this);
+    
+}
+
+GitBlameDlgBase::~GitBlameDlgBase()
+{
+    this->Disconnect(XRCID("m_tbBack"), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(GitBlameDlgBase::OnPreviousBlame), NULL, this);
+    this->Disconnect(XRCID("m_tbBack"), wxEVT_UPDATE_UI, wxUpdateUIEventHandler(GitBlameDlgBase::OnBackUpdateUI), NULL, this);
+    this->Disconnect(XRCID("m_tbForward"), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(GitBlameDlgBase::OnNextBlame), NULL, this);
+    this->Disconnect(XRCID("m_tbForward"), wxEVT_UPDATE_UI, wxUpdateUIEventHandler(GitBlameDlgBase::OnForwardUpdateUI), NULL, this);
+    m_choiceHistory->Disconnect(wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler(GitBlameDlgBase::OnHistoryItemSelected), NULL, this);
+    m_comboExtraArgs->Disconnect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(GitBlameDlgBase::OnExtraArgsTextEnter), NULL, this);
+    this->Disconnect(XRCID("m_toolbarItemRefresh"), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(GitBlameDlgBase::OnRefreshBlame), NULL, this);
+    this->Disconnect(XRCID("m_toolbarItemSettings"), wxEVT_COMMAND_TOOL_CLICKED, wxCommandEventHandler(GitBlameDlgBase::OnSettings), NULL, this);
+    m_stcBlame->Disconnect(wxEVT_LEFT_DCLICK, wxMouseEventHandler(GitBlameDlgBase::OnStcblameLeftDclick), NULL, this);
+    m_stcBlame->Disconnect(wxEVT_LEFT_DOWN, wxMouseEventHandler(GitBlameDlgBase::OnSelectionChanged), NULL, this);
+    m_fileListBox->Disconnect(wxEVT_COMMAND_LISTBOX_SELECTED, wxCommandEventHandler(GitBlameDlgBase::OnChangeFile), NULL, this);
+    m_button308->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(GitBlameDlgBase::OnCloseDialog), NULL, this);
+    
+}
+
+GitBlameSettingsDlgBase::GitBlameSettingsDlgBase(wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style)
+    : wxDialog(parent, id, title, pos, size, style)
+{
+    if ( !bBitmapLoaded ) {
+        // We need to initialise the default bitmap handler
+        wxXmlResource::Get()->AddHandler(new wxBitmapXmlHandler);
+        wxCrafterpca4kKInitBitmapResources();
+        bBitmapLoaded = true;
+    }
+    
+    wxBoxSizer* boxSizer420 = new wxBoxSizer(wxVERTICAL);
+    this->SetSizer(boxSizer420);
+    
+    wxBoxSizer* boxSizer434 = new wxBoxSizer(wxVERTICAL);
+    
+    boxSizer420->Add(boxSizer434, 0, wxALL|wxEXPAND, WXC_FROM_DIP(5));
+    
+    m_checkParentCommit = new wxCheckBox(this, wxID_ANY, _("Double-clicking a line shows blame for the parent commit"), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1,-1)), 0);
+    m_checkParentCommit->SetValue(true);
+    m_checkParentCommit->SetToolTip(_("A double-click on a code line refreshes blame, rebasing it either to the commit clicked or to its parent commit.\nMost of the time you will want to see what the code looked like earlier, so will want the parent commit."));
+    
+    boxSizer434->Add(m_checkParentCommit, 0, wxALL|wxEXPAND, WXC_FROM_DIP(5));
+    
+    m_checkShowLogControls = new wxCheckBox(this, wxID_ANY, _("Show the log and diff for the selected commit"), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1,-1)), 0);
+    m_checkShowLogControls->SetValue(true);
+    m_checkShowLogControls->SetToolTip(_("When a blame line is selected, the commit log message and diff are shown at the bottom of the dialog. Uncheck this box to hide those fields."));
+    
+    boxSizer434->Add(m_checkShowLogControls, 0, wxALL|wxEXPAND, WXC_FROM_DIP(5));
+    
+    m_stdBtnSizer429 = new wxStdDialogButtonSizer();
+    
+    boxSizer420->Add(m_stdBtnSizer429, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, WXC_FROM_DIP(10));
+    
+    m_button431 = new wxButton(this, wxID_OK, wxT(""), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, -1)), 0);
+    m_stdBtnSizer429->AddButton(m_button431);
+    
+    m_button433 = new wxButton(this, wxID_CANCEL, wxT(""), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, -1)), 0);
+    m_stdBtnSizer429->AddButton(m_button433);
+    m_stdBtnSizer429->Realize();
+    
+    SetName(wxT("GitBlameSettingsDlgBase"));
+    SetSize(-1,-1);
+    if (GetSizer()) {
+         GetSizer()->Fit(this);
+    }
+    if(GetParent()) {
+        CentreOnParent(wxBOTH);
+    } else {
+        CentreOnScreen(wxBOTH);
+    }
+#if wxVERSION_NUMBER >= 2900
+    if(!wxPersistenceManager::Get().Find(this)) {
+        wxPersistenceManager::Get().RegisterAndRestore(this);
+    } else {
+        wxPersistenceManager::Get().Restore(this);
+    }
+#endif
+}
+
+GitBlameSettingsDlgBase::~GitBlameSettingsDlgBase()
+{
 }

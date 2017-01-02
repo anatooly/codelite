@@ -44,7 +44,7 @@
  }]]]>
     </Plugin>
   </Plugins>
-  <VirtualDirectory Name="Source Files">
+  <VirtualDirectory Name="src">
     <File Name="worker_thread.cpp"/>
     <File Name="tokenizer.cpp"/>
     <File Name="tag_tree.cpp"/>
@@ -95,6 +95,10 @@
     <File Name="macros.h"/>
     <File Name="clBitmap.h"/>
     <File Name="clBitmap.cpp"/>
+    <File Name="clEditorConfig.h"/>
+    <File Name="clEditorConfig.cpp"/>
+    <File Name="commentconfigdata.cpp"/>
+    <File Name="commentconfigdata.h"/>
   </VirtualDirectory>
   <VirtualDirectory Name="Header Files">
     <File Name="y.tab.h"/>
@@ -603,4 +607,8 @@ PhpLexer.cpp: PhpLexer.l
   <Dependencies Name="Win_x64_Debug"/>
   <Dependencies Name="Win_x64_Release"/>
   <Dependencies Name="Win_x86_Release"/>
+  <VirtualDirectory Name="FileSystemWatcher">
+    <File Name="clFileSystemWatcher.h"/>
+    <File Name="clFileSystemWatcher.cpp"/>
+  </VirtualDirectory>
 </CodeLite_Project>

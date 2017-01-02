@@ -125,6 +125,7 @@ TagsOptionsData::TagsOptionsData()
     m_tokens.Add(wxT("__nonnull"));
     m_tokens.Add(wxT("noexcept"));
     m_tokens.Add(wxT("wxOVERRIDE"));
+    m_tokens.Add(wxT("override"));
     m_tokens.Add("final"); // ignore "final" keyword
 #if defined(__WXGTK__)
     m_tokens.Add(wxT("wxTopLevelWindowNative=wxTopLevelWindowGTK"));
@@ -216,6 +217,7 @@ TagsOptionsData::TagsOptionsData()
     m_types.Add(wxT("wxOrderedMap::iterator=std::pair<Key,Value>"));
     m_types.Add(wxT("wxOrderedMap::const_iterator=std::pair<Key,Value>"));
     m_types.Add(wxT("boost::shared_ptr::type=T"));
+    m_types.Add(wxT("std::unique_ptr::pointer=_Tp"));
 
     DoUpdateTokensWxMap();
     DoUpdateTokensWxMapReversed();

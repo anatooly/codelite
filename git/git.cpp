@@ -42,7 +42,6 @@
 #include "gitCommitListDlg.h"
 #include "gitDiffDlg.h"
 #include "gitFileDiffDlg.h"
-#include "gitLogDlg.h"
 #include "gitSettingsDlg.h"
 #include "git.h"
 
@@ -57,6 +56,7 @@
 #include <wx/msgdlg.h>
 #include "GitApplyPatchDlg.h"
 #include "DiffSideBySidePanel.h"
+#include "gitBlameDlg.h"
 #include <wx/ffile.h>
 #include "file_logger.h"
 #include "GitLocator.h"
@@ -134,6 +134,7 @@ GitPlugin::GitPlugin(IManager* manager)
     , m_pluginMenu(NULL)
     , m_commitListDlg(NULL)
     , m_commandProcessor(NULL)
+    , m_gitBlameDlg(NULL)
 {
     m_longName = _("GIT plugin");
     m_shortName = wxT("Git");
@@ -173,6 +174,7 @@ GitPlugin::GitPlugin(IManager* manager)
         wxCommandEventHandler(GitPlugin::OnFileResetSelected), NULL, this);
     m_eventHandler->Connect(XRCID("git_diff_file"), wxEVT_COMMAND_MENU_SELECTED,
         wxCommandEventHandler(GitPlugin::OnFileDiffSelected), NULL, this);
+    m_eventHandler->Bind(wxEVT_MENU, &GitPlugin::OnFileGitBlame, this, XRCID("git_blame_file"));
 
     // Add the console
     m_console = new GitConsole(m_mgr->GetOutputPaneNotebook(), this);
@@ -183,7 +185,7 @@ GitPlugin::GitPlugin(IManager* manager)
     m_progressTimer.SetOwner(this);
 }
 /*******************************************************************************/
-GitPlugin::~GitPlugin() {}
+GitPlugin::~GitPlugin() { delete m_gitBlameDlg; }
 
 /*******************************************************************************/
 clToolBar* GitPlugin::CreateToolBar(wxWindow* parent)
@@ -197,8 +199,8 @@ void GitPlugin::CreatePluginMenu(wxMenu* pluginsMenu)
 {
     m_pluginMenu = new wxMenu();
     wxMenuItem* item(NULL);
-    
-    BitmapLoader *bmps = m_mgr->GetStdIcons();
+
+    BitmapLoader* bmps = m_mgr->GetStdIcons();
     item = new wxMenuItem(m_pluginMenu, XRCID("git_pull"), _("Pull remote changes"));
     item->SetBitmap(bmps->LoadBitmap("pull"));
     m_pluginMenu->Append(item);
@@ -236,6 +238,9 @@ void GitPlugin::CreatePluginMenu(wxMenu* pluginsMenu)
     item =
         new wxMenuItem(m_pluginMenu, XRCID("git_commit_diff"), _("Show current diffs"), _("Show diffs"), wxITEM_NORMAL);
     item->SetBitmap(bmps->LoadBitmap("diff"));
+    m_pluginMenu->Append(item);
+    item = new wxMenuItem(m_pluginMenu, XRCID("git_blame"), _("Show git blame"), _("Show blame"), wxITEM_NORMAL);
+    item->SetBitmap(bmps->LoadBitmap("finger"));
     m_pluginMenu->Append(item);
     item = new wxMenuItem(m_pluginMenu, XRCID("git_apply_patch"), _("Apply Patch"), _("Apply Patch"), wxITEM_NORMAL);
     item->SetBitmap(bmps->LoadBitmap("patch"));
@@ -300,6 +305,8 @@ void GitPlugin::CreatePluginMenu(wxMenu* pluginsMenu)
         wxCommandEventHandler(GitPlugin::OnCommitList), NULL, this);
     m_eventHandler->Connect(XRCID("git_commit_diff"), wxEVT_COMMAND_MENU_SELECTED,
         wxCommandEventHandler(GitPlugin::OnShowDiffs), NULL, this);
+    m_eventHandler->Connect(
+        XRCID("git_blame"), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(GitPlugin::OnGitBlame), NULL, this);
     m_eventHandler->Connect(XRCID("git_apply_patch"), wxEVT_COMMAND_MENU_SELECTED,
         wxCommandEventHandler(GitPlugin::OnApplyPatch), NULL, this);
     m_eventHandler->Connect(
@@ -352,6 +359,8 @@ void GitPlugin::CreatePluginMenu(wxMenu* pluginsMenu)
         XRCID("git_refresh"), wxEVT_UPDATE_UI, wxUpdateUIEventHandler(GitPlugin::OnEnableGitRepoExists), NULL, this);
     m_eventHandler->Connect(XRCID("git_garbage_collection"), wxEVT_UPDATE_UI,
         wxUpdateUIEventHandler(GitPlugin::OnEnableGitRepoExists), NULL, this);
+    m_eventHandler->Connect(
+        XRCID("git_blame"), wxEVT_UPDATE_UI, wxUpdateUIEventHandler(GitPlugin::OnEnableGitRepoExists), NULL, this);
 }
 
 /*******************************************************************************/
@@ -393,6 +402,8 @@ void GitPlugin::UnPlug()
         wxCommandEventHandler(GitPlugin::OnCommitList), NULL, this);
     m_eventHandler->Disconnect(XRCID("git_commit_diff"), wxEVT_COMMAND_MENU_SELECTED,
         wxCommandEventHandler(GitPlugin::OnShowDiffs), NULL, this);
+    m_eventHandler->Disconnect(
+        XRCID("git_blame"), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(GitPlugin::OnGitBlame), NULL, this);
     m_eventHandler->Disconnect(XRCID("git_apply_patch"), wxEVT_COMMAND_MENU_SELECTED,
         wxCommandEventHandler(GitPlugin::OnApplyPatch), NULL, this);
     m_eventHandler->Disconnect(
@@ -407,6 +418,7 @@ void GitPlugin::UnPlug()
         XRCID("git_refresh"), wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(GitPlugin::OnRefresh), NULL, this);
     m_eventHandler->Disconnect(XRCID("git_garbage_collection"), wxEVT_COMMAND_MENU_SELECTED,
         wxCommandEventHandler(GitPlugin::OnGarbageColletion), NULL, this);
+    m_eventHandler->Unbind(wxEVT_MENU, &GitPlugin::OnFileGitBlame, this, XRCID("git_blame_file"));
 
     /*SYSTEM*/
     EventNotifier::Get()->Disconnect(wxEVT_INIT_DONE, wxCommandEventHandler(GitPlugin::OnInitDone), NULL, this);
@@ -857,7 +869,55 @@ void GitPlugin::OnListModified(wxCommandEvent& e)
         }
     }
 }
+
 /*******************************************************************************/
+void GitPlugin::OnGitBlame(wxCommandEvent& e)
+{
+    wxUnusedVar(e);
+
+    wxString filepath = GetEditorRelativeFilepath();
+    if(!filepath.empty()) {
+        DoGitBlame(filepath);
+    }
+}
+/*******************************************************************************/
+wxString GitPlugin::GetEditorRelativeFilepath() const // Called by OnGitBlame or the git blame dialog
+{
+    IEditor* current = m_mgr->GetActiveEditor();
+    if(!current || m_repositoryDirectory.empty()) {
+        return "";
+    }
+
+    // We need to be symlink-aware here on Linux, so use CLRealPath
+    wxString realfilepath = CLRealPath(current->GetFileName().GetFullPath());
+    wxFileName fn(realfilepath);
+    fn.MakeRelativeTo(CLRealPath(m_repositoryDirectory));
+
+    return fn.GetFullPath();
+}
+/*******************************************************************************/
+void GitPlugin::DoGitBlame(const wxString& args) // Called by OnGitBlame or the git blame dialog
+{
+    gitAction ga(gitBlame, args);
+    m_gitActionQueue.push_back(ga);
+    ProcessGitActionQueue();
+}
+/*******************************************************************************/
+void GitPlugin::OnGitBlameRevList(
+    const wxString& arg, const wxString& filepath, const wxString& commit) // Called by the git blame dialog
+{
+    wxString cmt(commit);
+    if(cmt.empty()) {
+        cmt = "HEAD";
+    }
+    wxString args = arg + ' ' + cmt + " -- " + filepath;
+
+    gitAction ga(gitRevlist, args);
+    m_gitActionQueue.push_back(ga);
+    ProcessGitActionQueue();
+}
+/*******************************************************************************/
+
 void GitPlugin::OnRefresh(wxCommandEvent& e)
 {
     wxUnusedVar(e);
@@ -1181,6 +1241,17 @@ void GitPlugin::ProcessGitActionQueue()
         GIT_MESSAGE(wxT("%s. Repo path: %s"), command.c_str(), m_repositoryDirectory.c_str());
         break;
 
+    case gitBlame:
+        GIT_MESSAGE("Git blame...");
+        command << " --no-pager blame --line-porcelain " << ga.arguments;
+        GIT_MESSAGE("Git blame: %s", command);
+        break;
+
+    case gitRevlist:
+        command << " --no-pager rev-list " << ga.arguments;
+        GIT_MESSAGE("Git rev-list: %s", command);
+        break;
+
     case gitRebase:
         GIT_MESSAGE(wxT("Rebasing.."));
         ShowProgress(wxT("Rebase with ") + ga.arguments + wxT(".."));
@@ -1481,9 +1552,8 @@ void GitPlugin::OnProcessTerminated(clProcessEvent& event)
     }
 
     if(m_commandOutput.StartsWith(wxT("fatal")) || m_commandOutput.StartsWith(wxT("error"))) {
-        wxString msg =
-            _("There was a problem while performing a git action.\n"
-              "Last command output:\n");
+        wxString msg = _("There was a problem while performing a git action.\n"
+                         "Last command output:\n");
         msg << m_commandOutput;
         wxMessageBox(msg, _("git error"), wxICON_ERROR | wxOK, m_topWindow);
         // Last action failed, clear queue
@@ -1518,6 +1588,19 @@ void GitPlugin::OnProcessTerminated(clProcessEvent& event)
             gitAction ga(gitCommit, commitArgs);
             m_gitActionQueue.push_back(ga);
             AddDefaultActions();
+        }
+
+    } else if(ga.action == gitBlame) {
+        if(!m_gitBlameDlg) {
+            m_gitBlameDlg = new GitBlameDlg(m_topWindow, this);
+        }
+        m_gitBlameDlg->SetBlame(m_commandOutput, ga.arguments);
+        m_gitBlameDlg->Show();
+        m_gitBlameDlg->SetFocus();
+
+    } else if(ga.action == gitRevlist) {
+        if(m_gitBlameDlg) {
+            m_gitBlameDlg->OnRevListOutput(m_commandOutput, ga.arguments);
         }
 
     } else if(ga.action == gitDiffRepoShow) {
@@ -1644,7 +1727,7 @@ void GitPlugin::OnProcessOutput(clProcessEvent& event)
     tmpOutput.MakeLower();
 
     if(ga.action != gitDiffRepoCommit && ga.action != gitDiffFile && ga.action != gitCommitList &&
-        ga.action != gitDiffRepoShow)
+        ga.action != gitDiffRepoShow && ga.action != gitBlame && ga.action != gitRevlist)
 
     {
         if(tmpOutput.Contains("username for")) {
@@ -1916,11 +1999,11 @@ void GitPlugin::DoCleanup()
 
 void GitPlugin::DoCreateTreeImages()
 {
-    // We update the tree view with new icons:
-    // each icon will get an additional of 2 icons:
-    // modified / OK
-    // the index will be: m_baseImageCount + img-base + 1 => OK
-    //                    m_baseImageCount + img-base + 2 => Modified
+// We update the tree view with new icons:
+// each icon will get an additional of 2 icons:
+// modified / OK
+// the index will be: m_baseImageCount + img-base + 1 => OK
+//                    m_baseImageCount + img-base + 2 => Modified
 #if 0
     if(m_treeImageMapping.empty()) {
         wxTreeCtrl* tree = m_mgr->GetTree(TreeFileView);
@@ -2248,7 +2331,7 @@ void GitPlugin::OnFileMenu(clContextMenuEvent& event)
     wxMenu* menu = new wxMenu();
     wxMenu* parentMenu = event.GetMenu();
     m_filesSelected = event.GetStrings();
-    
+
     BitmapLoader* bmps = m_mgr->GetStdIcons();
     wxMenuItem* item = new wxMenuItem(menu, XRCID("git_add_file"), _("Add file"));
     item->SetBitmap(bmps->LoadBitmap("plus"));
@@ -2260,6 +2343,11 @@ void GitPlugin::OnFileMenu(clContextMenuEvent& event)
 
     item = new wxMenuItem(menu, XRCID("git_diff_file"), _("Show file diff"));
     item->SetBitmap(bmps->LoadBitmap("diff"));
+    menu->Append(item);
+
+    menu->AppendSeparator();
+    item = new wxMenuItem(menu, XRCID("git_blame_file"), _("Show Git Blame"));
+    item->SetBitmap(bmps->LoadBitmap("finger"));
     menu->Append(item);
 
     item = new wxMenuItem(parentMenu, wxID_ANY, _("Git"), "", wxITEM_NORMAL, menu);
@@ -2291,7 +2379,7 @@ void GitPlugin::OnFolderMenu(clContextMenuEvent& event)
     wxMenu* menu = new wxMenu();
     wxMenu* parentMenu = event.GetMenu();
     m_selectedFolder = event.GetPath();
-    
+
     BitmapLoader* bmps = m_mgr->GetStdIcons();
     wxMenuItem* item = new wxMenuItem(menu, XRCID("git_pull_rebase_folder"), _("Pull remote changes"));
     item->SetBitmap(bmps->LoadBitmap("pull"));
@@ -2436,7 +2524,6 @@ void GitPlugin::DoShowCommitDialog(const wxString& diff, wxString& commitArgs)
 
 void GitPlugin::OnFolderCommit(wxCommandEvent& event)
 {
-    GitCmd::Vec_t commands;
     // 1. Get diff output
     wxString diff;
     bool res = DoExecuteCommandSync("diff --no-color HEAD", m_selectedFolder, diff);
@@ -2544,11 +2631,24 @@ void GitPlugin::WorkspaceClosed()
     m_workspaceFilename.Clear();
 }
 
-void GitPlugin::FetchNextCommits(int skip)
+void GitPlugin::FetchNextCommits(int skip, const wxString& args)
 {
     wxString skipCommits;
     skipCommits << " --skip=" << skip;
-    gitAction ga(gitCommitList, skipCommits);
+    gitAction ga(gitCommitList, args + skipCommits);
     m_gitActionQueue.push_back(ga);
     ProcessGitActionQueue();
+}
+
+void GitPlugin::OnFileGitBlame(wxCommandEvent& event)
+{
+    // Sanity
+    if(m_filesSelected.IsEmpty() || m_repositoryDirectory.empty()) return;
+
+    // We need to be symlink-aware here on Linux, so use CLRealPath
+    wxString realfilepath = CLRealPath(m_filesSelected.Item(0));
+    wxFileName fn(realfilepath);
+    fn.MakeRelativeTo(CLRealPath(m_repositoryDirectory));
+
+    DoGitBlame(fn.GetFullPath());
 }

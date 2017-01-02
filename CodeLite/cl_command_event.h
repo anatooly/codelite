@@ -33,6 +33,7 @@
 #include <wx/arrstr.h>
 #include <vector>
 #include "wxCodeCompletionBoxEntry.h"
+#include "clEditorConfig.h"
 
 // Set of flags that can be passed within the 'S{G}etInt' function of clCommandEvent
 enum {
@@ -489,6 +490,27 @@ public:
 typedef void (wxEvtHandler::*clProjectSettingsEventFunction)(clProjectSettingsEvent&);
 #define clProjectSettingsEventHandler(func) wxEVENT_HANDLER_CAST(clProjectSettingsEventFunction, func)
 
+//---------------------------------------------------------------
+// Find event
+//---------------------------------------------------------------
+class WXDLLIMPEXP_CL clFindEvent : public clCommandEvent
+{
+    wxStyledTextCtrl* m_ctrl;
+
+public:
+    clFindEvent(wxEventType commandType = wxEVT_NULL, int winid = 0);
+    clFindEvent(const clFindEvent& event);
+    clFindEvent& operator=(const clFindEvent& src);
+    virtual ~clFindEvent();
+    virtual wxEvent* Clone() const { return new clFindEvent(*this); }
+
+    void SetCtrl(wxStyledTextCtrl* ctrl) { this->m_ctrl = ctrl; }
+    wxStyledTextCtrl* GetCtrl() { return m_ctrl; }
+};
+
+typedef void (wxEvtHandler::*clFindEventFunction)(clFindEvent&);
+#define clFindEventHandler(func) wxEVENT_HANDLER_CAST(clFindEventFunction, func)
+
 // --------------------------------------------------------------
 // Parsing event
 // --------------------------------------------------------------
@@ -511,4 +533,25 @@ public:
 
 typedef void (wxEvtHandler::*clParseEventFunction)(clParseEvent&);
 #define clParseEventHandler(func) wxEVENT_HANDLER_CAST(clParseEventFunction, func)
+
+// --------------------------------------------------------------
+// clEditorConfigEvent event
+// --------------------------------------------------------------
+class WXDLLIMPEXP_CL clEditorConfigEvent : public clCommandEvent
+{
+    clEditorConfigSection m_editorConfigSection;
+
+public:
+    clEditorConfigEvent(wxEventType commandType = wxEVT_NULL, int winid = 0);
+    clEditorConfigEvent(const clEditorConfigEvent& event);
+    clEditorConfigEvent& operator=(const clEditorConfigEvent& src);
+    virtual ~clEditorConfigEvent();
+    virtual wxEvent* Clone() const { return new clEditorConfigEvent(*this); }
+    void SetEditorConfig(const clEditorConfigSection& editorConfig) { this->m_editorConfigSection = editorConfig; }
+    const clEditorConfigSection& GetEditorConfig() const { return m_editorConfigSection; }
+};
+
+typedef void (wxEvtHandler::*clEditorConfigEventFunction)(clEditorConfigEvent&);
+#define clEditorConfigEventHandler(func) wxEVENT_HANDLER_CAST(clEditorConfigEventFunction, func)
+
 #endif // CLCOMMANDEVENT_H

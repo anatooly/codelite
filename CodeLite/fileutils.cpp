@@ -34,6 +34,7 @@
 #include <wx/tokenzr.h>
 #include <map>
 #include <wx/msgdlg.h>
+#include "cl_standard_paths.h"
 
 void FileUtils::OpenFileExplorer(const wxString& path)
 {
@@ -171,8 +172,7 @@ void FileUtils::OSXOpenDebuggerTerminalAndGetTTY(const wxString& path, wxString&
         escapedPath.Prepend("\"").Append("\"");
     }
     tmpfile << "/tmp/terminal.tty." << ::wxGetProcessId();
-    command << "osascript -e 'tell app \"Terminal\" to do script \"tty > " << tmpfile
-            << " && clear && sleep 12345\"'";
+    command << "osascript -e 'tell app \"Terminal\" to do script \"tty > " << tmpfile << " && clear && sleep 12345\"'";
     CL_DEBUG("Executing: %s", command);
     long res = ::wxExecute(command);
     if(res == 0) {
@@ -219,8 +219,8 @@ void FileUtils::OSXOpenDebuggerTerminalAndGetTTY(const wxString& path, wxString&
     CL_DEBUG("TTY is: %s\n", tty);
 }
 
-void
-FileUtils::OpenSSHTerminal(const wxString& sshClient, const wxString& connectString, const wxString& password, int port)
+void FileUtils::OpenSSHTerminal(
+    const wxString& sshClient, const wxString& connectString, const wxString& password, int port)
 {
 #ifdef __WXMSW__
     wxString command;
@@ -229,7 +229,7 @@ FileUtils::OpenSSHTerminal(const wxString& sshClient, const wxString& connectStr
         wxMessageBox(_("Can't launch PuTTY. Don't know where it is ...."), "CodeLite", wxOK | wxCENTER | wxICON_ERROR);
         return;
     }
-    
+
     wxString puttyClient = putty.GetFullPath();
     if(puttyClient.Contains(" ")) {
         puttyClient.Prepend("\"").Append("\"");
@@ -265,7 +265,7 @@ bool FileUtils::WildMatch(const wxString& mask, const wxFileName& filename)
     for(size_t i = 0; i < masks.size(); ++i) {
         const wxString& pattern = masks.Item(i);
         if((!pattern.Contains("*") && lcFilename == pattern) ||
-           (pattern.Contains("*") && ::wxMatchWild(pattern, lcFilename))) {
+            (pattern.Contains("*") && ::wxMatchWild(pattern, lcFilename))) {
             // use exact match
             return true;
         }
@@ -362,10 +362,7 @@ bool FileUtils::IsHidden(const wxFileName& filename)
 #endif
 }
 
-bool FileUtils::IsHidden(const wxString& filename)
-{
-    return IsHidden(filename);
-}
+bool FileUtils::IsHidden(const wxString& filename) { return IsHidden(filename); }
 
 bool FileUtils::WildMatch(const wxArrayString& masks, const wxString& filename)
 {
@@ -373,15 +370,74 @@ bool FileUtils::WildMatch(const wxArrayString& masks, const wxString& filename)
         // If one of the masks is plain "*" - we match everything
         return true;
     }
-    
+
     wxString lcFilename = filename.Lower();
     for(size_t i = 0; i < masks.size(); ++i) {
         const wxString& pattern = masks.Item(i);
         if((!pattern.Contains("*") && lcFilename == pattern) ||
-           (pattern.Contains("*") && ::wxMatchWild(pattern, lcFilename))) {
+            (pattern.Contains("*") && ::wxMatchWild(pattern, lcFilename))) {
             // use exact match
             return true;
         }
     }
     return false;
+}
+
+bool FileUtils::SetFilePermissions(const wxFileName& filename, mode_t perm)
+{
+    wxString strFileName = filename.GetFullPath();
+    return (::chmod(strFileName.mb_str(wxConvUTF8).data(), perm & 07777) != 0);
+}
+
+bool FileUtils::GetFilePermissions(const wxFileName& filename, mode_t& perm)
+{
+    struct stat b;
+    wxString strFileName = filename.GetFullPath();
+    if(::stat(strFileName.mb_str(wxConvUTF8).data(), &b) == 0) {
+        perm = b.st_mode;
+        return true;
+    }
+    return false;
+}
+
+time_t FileUtils::GetFileModificationTime(const wxFileName& filename)
+{
+    wxString file = filename.GetFullPath();
+    struct stat buff;
+    const wxCharBuffer cname = file.mb_str(wxConvUTF8);
+    if(stat(cname.data(), &buff) < 0) {
+        return 0;
+    }
+    return buff.st_mtime;
+}
+
+size_t FileUtils::GetFileSize(const wxFileName& filename)
+{
+    wxFFile fp(filename.GetFullPath(), "rb");
+    if(fp.IsOpened()) {
+        return fp.Length();
+    }
+    return 0;
+}
+
+wxString FileUtils::EscapeString(const wxString& str)
+{
+    wxString modstr = str;
+    modstr.Replace(" ", "\\ ");
+    modstr.Replace("\"", "\\\"");
+    return modstr;
+}
+
+wxString FileUtils::GetOSXTerminalCommand(const wxString& command, const wxString& workingDirectory)
+{
+    wxFileName script(clStandardPaths::Get().GetBinFolder(), "osx-terminal.sh");
+    
+    wxString cmd;
+    cmd << EscapeString(script.GetFullPath()) << " \"";
+    if(!workingDirectory.IsEmpty()) {
+        cmd << "cd " << EscapeString(workingDirectory) << " && ";
+    }
+    cmd << EscapeString(command) << "\"";
+    clDEBUG() << "GetOSXTerminalCommand returned:" << cmd << clEndl;
+    return cmd;
 }

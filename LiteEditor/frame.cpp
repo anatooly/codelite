@@ -986,7 +986,6 @@ void clMainFrame::CreateGUIControls()
     m_mainPanel = new wxPanel(this);
     GetSizer()->Add(m_mainPanel, 1, wxEXPAND);
     InitializeLogo();
-    BitmapLoader& bmpLoader = *(PluginManager::Get()->GetStdIcons());
 
 #if defined(__WXOSX__) && wxCHECK_VERSION(3, 1, 0)
     EnableFullScreenView();
@@ -1329,7 +1328,8 @@ void clMainFrame::CreateToolbars24()
     //----------------------------------------------
     // create the standard toolbar
     //----------------------------------------------
-    clToolBar* tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, clTB_DEFAULT_STYLE);
+    clToolBar* tb =
+        new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_PLAIN_BACKGROUND);
     tb->SetToolBitmapSize(wxSize(24, 24));
     tb->SetArtProvider(new CLMainAuiTBArt());
 
@@ -1370,7 +1370,7 @@ void clMainFrame::CreateToolbars24()
     // create the search toolbar
     //----------------------------------------------
     info = wxAuiPaneInfo();
-    tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, clTB_DEFAULT_STYLE);
+    tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_PLAIN_BACKGROUND);
     tb->SetArtProvider(new CLMainAuiTBArt());
     tb->SetToolBitmapSize(wxSize(24, 24));
 
@@ -1398,7 +1398,7 @@ void clMainFrame::CreateToolbars24()
     //----------------------------------------------
     // create the build toolbar
     //----------------------------------------------
-    tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, clTB_DEFAULT_STYLE);
+    tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_PLAIN_BACKGROUND);
     tb->SetArtProvider(new CLMainAuiTBArt());
     tb->SetToolBitmapSize(wxSize(24, 24));
 
@@ -1429,7 +1429,7 @@ void clMainFrame::CreateToolbars24()
     //----------------------------------------------
     // create the debugger toolbar
     //----------------------------------------------
-    tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, clTB_DEFAULT_STYLE);
+    tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_PLAIN_BACKGROUND);
     tb->SetArtProvider(new CLMainAuiTBArt());
     tb->SetToolBitmapSize(wxSize(24, 24));
 
@@ -1657,7 +1657,7 @@ void clMainFrame::CreateToolbars16()
     //----------------------------------------------
     wxWindow* toolbar_parent(m_mainPanel);
 
-    clToolBar* tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, clTB_DEFAULT_STYLE);
+    clToolBar* tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_PLAIN_BACKGROUND);
     tb->SetArtProvider(new CLMainAuiTBArt());
 
     wxAuiPaneInfo info;
@@ -1703,7 +1703,7 @@ void clMainFrame::CreateToolbars16()
     //----------------------------------------------
     info = wxAuiPaneInfo();
 
-    tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, clTB_DEFAULT_STYLE);
+    tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_PLAIN_BACKGROUND);
     tb->SetArtProvider(new CLMainAuiTBArt());
     tb->SetToolBitmapSize(wxSize(16, 16));
 
@@ -1732,7 +1732,7 @@ void clMainFrame::CreateToolbars16()
     //----------------------------------------------
     // create the build toolbar
     //----------------------------------------------
-    tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, clTB_DEFAULT_STYLE);
+    tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_PLAIN_BACKGROUND);
     tb->SetArtProvider(new CLMainAuiTBArt());
     tb->SetToolBitmapSize(wxSize(16, 16));
 
@@ -1762,7 +1762,7 @@ void clMainFrame::CreateToolbars16()
     //----------------------------------------------
     // create the debugger toolbar
     //----------------------------------------------
-    tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, clTB_DEFAULT_STYLE);
+    tb = new clToolBar(toolbar_parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxAUI_TB_PLAIN_BACKGROUND);
     tb->SetArtProvider(new CLMainAuiTBArt());
     tb->SetToolBitmapSize(wxSize(16, 16));
 
@@ -1965,12 +1965,13 @@ void clMainFrame::DispatchCommandEvent(wxCommandEvent& event)
         return;
     }
 
-    // Do the default and pass this event to the Editor
     LEditor* editor = GetMainBook()->GetActiveEditor(true);
-    if(!editor && (event.GetId() != wxID_FIND)) {
-        return;
+    if(editor) {
+        editor->OnMenuCommand(event);
+    } else if(event.GetId() == wxID_FIND) {
+        // Let the plugins handle this
+        GetMainBook()->ShowQuickBarForPlugins();
     }
-    editor->OnMenuCommand(event);
 }
 
 void clMainFrame::DispatchUpdateUIEvent(wxUpdateUIEvent& event)
@@ -2033,7 +2034,7 @@ void clMainFrame::OnClose(wxCloseEvent& event)
     }
 
     event.Skip();
-    
+
     wxString msg;
     ManagerST::Get()->SetShutdownInProgress(true);
 
@@ -2159,7 +2160,7 @@ void clMainFrame::OnFileReload(wxCommandEvent& event)
         if(editor->GetModify()) {
             // Ask user if he really wants to lose all changes
             wxString msg;
-            msg << editor->GetFileName().GetFullName() << _(" has been modified, reload file anyways?");
+            msg << editor->GetFileName().GetFullName() << _(" has been modified, reload file anyway?");
             wxRichMessageDialog dlg(::wxGetTopLevelParent(editor), msg, _("Reload File"),
                 wxYES_NO | wxCANCEL | wxNO_DEFAULT | wxICON_WARNING);
             if(dlg.ShowModal() != wxID_YES) {
@@ -2440,33 +2441,8 @@ void clMainFrame::OnProjectNewWorkspace(wxCommandEvent& event)
 void clMainFrame::OnProjectNewProject(wxCommandEvent& event)
 {
     // Let the plugin process this request first
-    clNewProjectEvent newProjectEvent(wxEVT_NEW_PROJECT_WIZARD_SHOWING);
-    newProjectEvent.SetEventObject(this);
-    if(EventNotifier::Get()->ProcessEvent(newProjectEvent)) {
-        return;
-    }
-
     wxUnusedVar(event);
-    NewProjectWizard wiz(this, newProjectEvent.GetTemplates());
-    if(wiz.RunWizard(wiz.GetFirstPage())) {
-
-        ProjectData data = wiz.GetProjectData();
-
-        // Try the plugins first
-        clNewProjectEvent finishEvent(wxEVT_NEW_PROJECT_WIZARD_FINISHED);
-        finishEvent.SetEventObject(this);
-        finishEvent.SetToolchain(data.m_cmpType);
-        finishEvent.SetDebugger(data.m_debuggerType);
-        finishEvent.SetProjectName(data.m_name);
-        finishEvent.SetProjectFolder(data.m_path);
-        finishEvent.SetTemplateName(data.m_sourceTemplate);
-        if(EventNotifier::Get()->ProcessEvent(finishEvent)) {
-            return;
-        }
-
-        // Carry on with the default behaviour
-        ManagerST::Get()->CreateProject(data);
-    }
+    ManagerST::Get()->ShowNewProjectWizard();
 }
 
 void clMainFrame::OnProjectAddProject(wxCommandEvent& event)
@@ -2558,7 +2534,7 @@ void clMainFrame::OnCtagsOptions(wxCommandEvent& event)
 
         // We use this method 'UpdateParserPaths' since it will also update the parser
         // thread with any workspace search/exclude paths related
-        ManagerST::Get()->UpdateParserPaths();
+        ManagerST::Get()->UpdateParserPaths(false);
 
         TagsManagerST::Get()->GetDatabase()->SetMaxWorkspaceTagToColour(m_tagsOptionsData.GetMaxItemToColour());
 
@@ -3721,7 +3697,7 @@ void clMainFrame::CompleteInitialization()
 
 // Load debuggers (*must* be after the plugins)
 #ifdef USE_POSIX_LAYOUT
-    wxString plugdir(clStandardPaths::Get().GetDataDir() + wxT(PLUGINS_DIR));
+    wxString plugdir(clStandardPaths::Get().GetPluginsDirectory());
     DebuggerMgr::Get().Initialize(this, EnvironmentConfig::Instance(), plugdir);
 #else
     DebuggerMgr::Get().Initialize(this, EnvironmentConfig::Instance(), ManagerST::Get()->GetInstallDir());
@@ -3767,9 +3743,9 @@ void clMainFrame::CompleteInitialization()
     eventShowTabBar.SetInt(clConfig::Get().Read(kConfigShowTabBar, true));
     OnShowTabBar(eventShowTabBar);
     ShowOrHideCaptions();
-    
+
     TabGroupsManager::Get(); // Ensure that the events are binded
-    
+
     ManagerST::Get()->GetPerspectiveManager().LoadPerspective(NORMAL_LAYOUT);
     m_initCompleted = true;
 
@@ -5534,7 +5510,7 @@ void clMainFrame::OnParserThreadReady(wxCommandEvent& e)
     }
 }
 
-void clMainFrame::OnFileSaveUI(wxUpdateUIEvent& event) { OnFileSaveAllUI(event); }
+void clMainFrame::OnFileSaveUI(wxUpdateUIEvent& event) { event.Enable(true); }
 
 void clMainFrame::OnActivateEditor(wxCommandEvent& e)
 {

@@ -553,8 +553,11 @@ void NewBuildTab::DoProcessOutput(bool compilationEnded, bool isSummaryLine)
 
         m_view->SetEditable(true);
         buildLine.Trim();
+        wxString modText;
+        ::clStripTerminalColouring(buildLine, modText);
+        
         int curline = m_view->GetLineCount() - 1;
-        m_view->AppendText(buildLine + "\n");
+        m_view->AppendText(modText + "\n");
 
         // get the newly added line width
         int endPosition = m_view->GetLineEndPosition(curline); // get character position from begin
@@ -939,11 +942,10 @@ void NewBuildTab::DoCentreErrorLine(BuildLineInfo* bli, LEditor* editor, bool ce
 
     if(centerLine) {
         // If the line in the build error tab is not visible, ensure it is
-        int firstVisibleLine = m_view->GetFirstVisibleLine();
         int linesOnScreen = m_view->LinesOnScreen();
 
         // Our line is not visible
-        firstVisibleLine = bli->GetLineInBuildTab() - (linesOnScreen / 2);
+        int firstVisibleLine = bli->GetLineInBuildTab() - (linesOnScreen / 2);
         if(firstVisibleLine < 0) {
             firstVisibleLine = 0;
         }

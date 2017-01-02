@@ -47,6 +47,7 @@
 #include "cl_unredo.h"
 #include "clEditorStateLocker.h"
 #include <wx/cmndata.h>
+#include <wx/bitmap.h>
 
 #define DEBUGGER_INDICATOR 11
 #define MATCH_INDICATOR 10
@@ -238,6 +239,7 @@ protected:
     wxString m_keywordClasses;
     /// A space delimited list of all the variables in this editor
     wxString m_keywordLocals;
+    wxBitmap m_editorBitmap;
 
 public:
     static bool m_ccShowPrivateMembers;
@@ -254,6 +256,9 @@ public:
     bool IsHasCCAnnotation() const { return m_hasCCAnnotation; }
     void ClearCCAnnotations();
 
+    void SetEditorBitmap(const wxBitmap& editorBitmap) { this->m_editorBitmap = editorBitmap; }
+    const wxBitmap& GetEditorBitmap() const { return m_editorBitmap; }
+    
 public:
     static FindReplaceData& GetFindReplaceData() { return m_findReplaceData; }
 
@@ -558,7 +563,7 @@ public:
      * @brief find all occurances of the selected text and select
      */
     void QuickFindAll();
-
+    
     bool FindAndSelect();
     bool FindAndSelect(const FindReplaceData& data);
     bool FindAndSelect(const wxString& pattern, const wxString& name);
@@ -570,6 +575,11 @@ public:
     bool Replace(const FindReplaceData& data);
 
     void RecalcHorizontalScrollbar();
+    
+    /**
+     * Get editor options. Takes any workspace/project overrides into account
+     */
+    virtual OptionsConfigPtr GetOptions() { return m_options; }
 
     /**
      * Add marker to the current line
@@ -862,7 +872,12 @@ public:
     virtual int PositionAfterPos(int pos);
     virtual int PositionBeforePos(int pos);
     virtual int GetCharAtPos(int pos);
-
+    
+    /**
+     * @brief apply editor configuration (TAB vs SPACES, tab size, EOL mode etc)
+     */
+    virtual void ApplyEditorConfig();
+    
     /**
      * @brief return true if the current editor is detached from the mainbook
      */
@@ -882,11 +897,6 @@ public:
 
     //----------------------------------------------------------------------------
     //----------------------------------------------------------------------------
-
-    /**
-     * Get editor options. Takes any workspace/project overrides into account
-     */
-    OptionsConfigPtr GetOptions() { return m_options; }
 
     void SetIsVisible(const bool& isVisible) { this->m_isVisible = isVisible; }
     const bool& GetIsVisible() const { return m_isVisible; }

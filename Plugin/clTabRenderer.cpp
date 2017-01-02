@@ -3,6 +3,7 @@
 #include <wx/dcmemory.h>
 #include <wx/settings.h>
 #include "Notebook.h"
+#include "editor_config.h"
 
 #if CL_BUILD
 #include "drawingutils.h"
@@ -22,7 +23,7 @@ void clTabColours::InitFromColours(const wxColour& baseColour, const wxColour& t
         inactiveTabTextColour = "WHITE";
         inactiveTabBgColour = baseColour.ChangeLightness(110);
         inactiveTabPenColour = inactiveTabBgColour.ChangeLightness(80);
-        inactiveTabInnerPenColour = inactiveTabBgColour.ChangeLightness(120);
+        inactiveTabInnerPenColour = inactiveTabPenColour; // inactiveTabBgColour.ChangeLightness(120);
 
         tabAreaColour = baseColour.ChangeLightness(130);
         // 12x12 bitmap
@@ -37,7 +38,7 @@ void clTabColours::InitFromColours(const wxColour& baseColour, const wxColour& t
         inactiveTabTextColour = "BLACK";
         inactiveTabBgColour = baseColour.ChangeLightness(90);
         inactiveTabPenColour = inactiveTabBgColour.ChangeLightness(80);
-        inactiveTabInnerPenColour = baseColour;
+        inactiveTabInnerPenColour = inactiveTabPenColour; // baseColour;
 
         tabAreaColour = baseColour.ChangeLightness(130);
         // 12x12 bitmap
@@ -53,19 +54,23 @@ void clTabColours::InitFromColours(const wxColour& baseColour, const wxColour& t
 void clTabColours::InitDarkColours()
 {
     activeTabTextColour = "WHITE";
-    activeTabBgColour = wxColour("#211e1e");
-    activeTabPenColour = wxColour("#0e0d0d");
-    activeTabInnerPenColour = wxColour("#343131");
+    activeTabBgColour = wxColour("rgb(80,80,80)");
+    activeTabPenColour = activeTabBgColour.ChangeLightness(110);
+    activeTabInnerPenColour = activeTabBgColour; // wxColour("#343131");
 
     inactiveTabTextColour = wxColour("rgb(200, 200, 200)");
-    inactiveTabBgColour = wxColour("#393838");
+    inactiveTabBgColour = wxColour("rgb(50,49,48)");
     inactiveTabPenColour = wxColour("#100f0f");
-    inactiveTabInnerPenColour = wxColour("#535252");
+    inactiveTabInnerPenColour = inactiveTabBgColour; // wxColour("#535252");
 
-    tabAreaColour = wxColour("#131111").ChangeLightness(115);
+#ifdef __WXOSX__
+    tabAreaColour = *wxBLACK;
+#else
+    tabAreaColour = wxColour("rgb(37,22,22)"); //.ChangeLightness(115);
+#endif
     // markerColour = wxColour("rgb(255, 128, 0)");
     markerColour = wxColour("rgb(105, 193, 240)");
-    
+
     // 12x12 bitmap
     closeButton = wxXmlResource::Get()->LoadBitmap("notebook-dark-x");
     chevronDown = wxXmlResource::Get()->LoadBitmap("chevron-down-grey");
@@ -74,26 +79,25 @@ void clTabColours::InitDarkColours()
 void clTabColours::InitLightColours()
 {
     activeTabTextColour = "#444444";
-    activeTabPenColour = "#b9b9b9";
-    activeTabInnerPenColour = "#ffffff";
-
-
-    //    dc.GradientFillLinear( rect , wxColour( 0xCC,0xCC,0xCC ), wxColour( 0xA8,0xA8,0xA8 ) , wxSOUTH );
-    //    dc.SetPen( wxPen( wxColour( 0x51,0x51,0x51 ) ) );
     inactiveTabTextColour = "#444444";
-    //#ifdef __WXMSW__
-    //    activeTabBgColour = "#FBFBFB";
-    //#else
     activeTabBgColour = "#f0f0f0";
-    //#endif
-    inactiveTabBgColour = "#e5e5e5";
-    inactiveTabPenColour = "#b9b9b9";
-    inactiveTabInnerPenColour = "#ffffff";
+    activeTabInnerPenColour = activeTabBgColour; //"#ffffff";
 
-    tabAreaColour = "#dcdcdc"; // wxColour("rgb(64, 64, 64)");
+    //#endif
+    tabAreaColour = wxSystemSettings::GetColour(wxSYS_COLOUR_3DFACE).ChangeLightness(80);
+
     markerColour = wxColour("rgb(227, 125, 9)");
-    
-    inactiveTabBgColour = tabAreaColour;
+
+    inactiveTabBgColour = tabAreaColour.ChangeLightness(120);
+    inactiveTabInnerPenColour = inactiveTabBgColour;
+    inactiveTabPenColour = inactiveTabBgColour.ChangeLightness(75); // The outline is a bit darker
+#ifdef __WXOSX__
+    activeTabPenColour = activeTabBgColour;
+#else
+    activeTabPenColour = inactiveTabPenColour;
+#endif
+
+    // The active tab pen colour is darker than the Inactive one
     
     // 12x12 bitmap
     closeButton = wxXmlResource::Get()->LoadBitmap("notebook-light-x");
@@ -143,12 +147,12 @@ void clTabInfo::CalculateOffsets(size_t style)
         m_height = fixedHeight.GetHeight() + (4 * m_tabCtrl->GetArt()->ySpacer);
     }
 
-#ifdef __WXGTK__
-    // On GTK, limit the tab height
-    if(m_height >= 30) {
-        m_height = 30;
-    }
-#endif
+//#ifdef __WXGTK__
+//    // On GTK, limit the tab height
+//    if(m_height >= 30) {
+//        m_height = 30;
+//    }
+//#endif
 
     m_width = 0;
     if(!IS_VERTICAL_TABS(style) || true) {
@@ -197,10 +201,10 @@ void clTabInfo::CalculateOffsets(size_t style)
         wxSwap(m_bmpCloseY, m_bmpCloseX);
         wxSwap(m_bmpY, m_bmpX);
         wxSwap(m_textX, m_textY);
-        
+
         m_width = m_tabCtrl->GetSize().GetWidth();
         m_textX += 1;
-        
+
         m_rect.SetWidth(m_width);
         m_rect.SetHeight(m_height);
         m_rect.SetX(0);
@@ -224,4 +228,15 @@ void clTabInfo::SetActive(bool active, size_t style)
 {
     this->m_active = active;
     CalculateOffsets(style);
+}
+
+clTabRenderer::clTabRenderer()
+    : bottomAreaHeight(0)
+    , majorCurveWidth(0)
+    , smallCurveWidth(0)
+    , overlapWidth(0)
+    , verticalOverlapWidth(0)
+    , xSpacer(5)
+{
+   ySpacer = EditorConfigST::Get()->GetOptions()->GetNotebookTabHeight();
 }

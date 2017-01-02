@@ -1424,6 +1424,12 @@ bool LEditor::SaveFileAs(const wxString& newname, const wxString& savePath)
     if(dlg.ShowModal() == wxID_OK) {
         // get the path
         wxFileName name(dlg.GetPath());
+
+        // Prepare the "SaveAs" event, but dont send it just yet
+        clFileSystemEvent saveAsEvent(wxEVT_FILE_SAVEAS);
+        saveAsEvent.SetPath(m_fileName.Exists() ? m_fileName.GetFullPath() : wxString(""));
+        saveAsEvent.SetNewpath(name.GetFullPath());
+
         if(!SaveToFile(name)) {
             wxMessageBox(_("Failed to save file"), _("Error"), wxOK | wxICON_ERROR);
             return false;
@@ -1438,26 +1444,13 @@ bool LEditor::SaveFileAs(const wxString& newname, const wxString& savePath)
         SetSyntaxHighlight();
 
         clMainFrame::Get()->GetMainBook()->MarkEditorReadOnly(this);
+
+        // Fire the "File renamed" event
+        EventNotifier::Get()->AddPendingEvent(saveAsEvent);
         return true;
     }
     return false;
 }
-
-#ifdef __WXGTK__
-//--------------------------------
-// GTK only get permissions method
-//--------------------------------
-mode_t GTKGetFilePermissions(const wxString& filename)
-{
-    // keep the original file permissions
-    struct stat b;
-    mode_t permissions(0);
-    if(stat(filename.mb_str(wxConvUTF8).data(), &b) == 0) {
-        permissions = b.st_mode;
-    }
-    return permissions;
-}
-#endif
 
 // an internal function that does the actual file writing to disk
 bool LEditor::SaveToFile(const wxFileName& fileName)
@@ -1503,11 +1496,12 @@ bool LEditor::SaveToFile(const wxFileName& fileName)
     // Notify the user and continue
     if(intermediateFile.Exists()) {
         // We failed to delete the intermediate file
-        ::wxMessageBox(wxString::Format(_("Unable to create intermediate file\n'%s'\nfor writing. File already exists!"),
-                                        intermediateFile.GetFullPath()),
-                       "CodeLite",
-                       wxOK | wxCENTER | wxICON_ERROR,
-                       EventNotifier::Get()->TopFrame());
+        ::wxMessageBox(
+            wxString::Format(_("Unable to create intermediate file\n'%s'\nfor writing. File already exists!"),
+                             intermediateFile.GetFullPath()),
+            "CodeLite",
+            wxOK | wxCENTER | wxICON_ERROR,
+            EventNotifier::Get()->TopFrame());
         return false;
     }
 
@@ -1548,10 +1542,11 @@ bool LEditor::SaveToFile(const wxFileName& fileName)
     file.Write(buf.data(), strlen(buf.data()));
     file.Close();
 
-#ifdef __WXGTK__
     // keep the original file permissions
-    mode_t origPermissions = GTKGetFilePermissions(fileName.GetFullPath());
-#endif
+    mode_t origPermissions = 0;
+    if(!FileUtils::GetFilePermissions(fileName, origPermissions)) {
+        clWARNING() << "Failed to read file permissions." << fileName << clEndl;
+    }
 
 // The write was done to a temporary file, override it
 #ifdef __WXMSW__
@@ -1586,14 +1581,10 @@ bool LEditor::SaveToFile(const wxFileName& fileName)
     }
 #endif
 
-// override was successful, restore execute permissions
-#ifdef __WXGTK__
-    mode_t newFilePermissions = GTKGetFilePermissions(fileName.GetFullPath());
-    if(origPermissions & S_IXUSR) newFilePermissions |= S_IXUSR;
-    if(origPermissions & S_IXGRP) newFilePermissions |= S_IXGRP;
-    if(origPermissions & S_IXOTH) newFilePermissions |= S_IXOTH;
-    ::chmod(fileName.GetFullPath().mb_str(wxConvUTF8), newFilePermissions);
-#endif
+    // Restore the orig file permissions
+    if(origPermissions) {
+        FileUtils::SetFilePermissions(fileName, origPermissions);
+    }
 
     // update the modification time of the file
     m_modifyTime = GetFileModificationTime(fileName.GetFullPath());
@@ -2946,7 +2937,10 @@ void LEditor::ReloadFile()
     SetSavePoint();
     EmptyUndoBuffer();
     GetCommandsProcessor().Reset();
-
+    
+    // Update the editor properties
+    DoUpdateOptions();
+    SetProperties();
     UpdateColours();
     SetEOL();
 
@@ -4568,6 +4562,12 @@ void LEditor::DoUpdateOptions()
     if(ManagerST::Get()->IsWorkspaceOpen()) {
         LocalWorkspaceST::Get()->GetOptions(m_options, GetProject());
     }
+    
+    clEditorConfigEvent event(wxEVT_EDITOR_CONFIG_LOADING);
+    event.SetFileName(GetFileName().GetFullPath());
+    if(EventNotifier::Get()->ProcessEvent(event)) {
+        m_options->UpdateFromEditorConfig(event.GetEditorConfig());
+    }
 }
 
 bool LEditor::ReplaceAllExactMatch(const wxString& what, const wxString& replaceWith)
@@ -5416,6 +5416,8 @@ void LEditor::ClearCCAnnotations()
         AnnotationClearAll();
     }
 }
+
+void LEditor::ApplyEditorConfig() { SetProperties(); }
 
 // ----------------------------------
 // SelectionInfo

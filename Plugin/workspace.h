@@ -40,6 +40,8 @@
 #include "localworkspace.h"
 #include "codelite_exports.h"
 
+#define WORKSPACE_XML_VERSION "10.0.0"
+
 /*!
  * \brief
  * Workspace manager class
@@ -77,11 +79,75 @@ public:
 
     /// Destructor
     virtual ~clCxxWorkspace();
+    /**
+     * @brief return the XML version of this workspace
+     */
+    wxString GetVersion() const;
 
 private:
+    
     void DoUpdateBuildMatrix();
+    /**
+     * @brief mark all projects as non-active
+     */
+    void DoUnselectActiveProject();
+
+    /**
+     * @brief load projects from the XML file
+     */
+    void DoLoadProjectsFromXml(wxXmlNode* parentNode, const wxString& folder, std::vector<wxXmlNode*>& removedChildren);
+
+    // return the wxXmlNode instance for the give path
+    // the path is separated by "/"
+    // return NULL if no such virtual directory exists
+    wxXmlNode* DoGetWorkspaceFolderXmlNode(const wxString& path);
+
+    /**
+     * @brief return the wxXmlNode for this project
+     */
+    wxXmlNode* DoGetProjectXmlNode(const wxString& projectName);
+
+    /**
+     * @brief create workspace folder and return the wxXmlNode. If this path already exists, return it
+     * @param path the path is separated by "/".e.g. "projects/plugins/C++"
+     */
+    wxXmlNode* DoCreateWorkspaceFolder(const wxString& path);
+
+    bool DoLoadWorkspace(const wxString& fileName, wxString& errMsg);
+
+    /**
+     * @brief return list of all projects nodes in this workspace
+     */
+    std::list<wxXmlNode*> DoGetProjectsXmlNodes() const;
+
+    void DoVisitWorkspaceFolders(wxXmlNode* parent, const wxString& curpath, wxArrayString& paths) const;
 
 public:
+    /**
+     * @brief move 'projectName' to folder. Create the folder if it does not exists
+     */
+    bool MoveProjectToFolder(const wxString& projectName, const wxString& folderPath, bool saveAndReload);
+
+    /**
+     * @brief create workspace folder
+     * @param path the path is separated by "/".e.g. "projects/plugins/C++"
+     */
+    bool CreateWorkspaceFolder(const wxString& path);
+
+    /**
+     * @brief delete workspace folder. Notice that this will also remove (but not delete) all the projects from the
+     * workspace
+     */
+    void DeleteWorkspaceFolder(const wxString& path);
+
+    /**
+     * @brief return list of workspace folders in the form of:
+     * a/b/c
+     * a/b/d
+     * e/f/g
+     */
+    wxArrayString GetWorkspaceFolders() const;
+
     /**
      * @brief createa 'compile_commands' json object for the workspace projects (only the enabled ones)
      */
@@ -168,8 +234,8 @@ public:
      * \returns
      * true on success false otherwise
      */
-    bool CreateProject(
-        const wxString& name, const wxString& path, const wxString& type, bool addToBuildMatrix, wxString& errMsg);
+    bool CreateProject(const wxString& name, const wxString& path, const wxString& type,
+        const wxString& workspaceFolder, bool addToBuildMatrix, wxString& errMsg);
 
     /**
      * @brief rename a project
@@ -227,9 +293,8 @@ public:
     /**
      * Set project as active
      * \param name  project name
-     * \param active state
      */
-    void SetActiveProject(const wxString& name, bool active);
+    void SetActiveProject(const wxString& name);
 
     /**
      * Add new virtual directoy to workspace
@@ -386,13 +451,18 @@ public:
      */
     ProjectPtr GetActiveProject() const;
 
+    /**
+     * @brief clear the workspace include path cache (for each project)
+     */
+    void ClearIncludePathCache();
+
 private:
     /**
      * Do the actual add project
      * \param path project file path
      * \param errMsg [output] incase an error, report the error to the caller
      */
-    ProjectPtr DoAddProject(const wxString& path, wxString& errMsg);
+    ProjectPtr DoAddProject(const wxString& path, const wxString& projectVirtualFolder, wxString& errMsg);
     ProjectPtr DoAddProject(ProjectPtr proj);
 
     void RemoveProjectFromBuildMatrix(ProjectPtr prj);

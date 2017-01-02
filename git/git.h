@@ -52,6 +52,8 @@
 #include "clTabTogglerHelper.h"
 
 class clCommandProcessor;
+class GitBlameDlg;
+
 class gitAction
 {
 public:
@@ -97,7 +99,7 @@ class GitPlugin : public IPlugin
 {
     friend class GitConsole;
     friend class GitCommitListDlg;
-    
+
     typedef std::map<int, int> IntMap_t;
     enum {
         gitNone = 0,
@@ -122,6 +124,8 @@ class GitPlugin : public IPlugin
         gitBranchSwitch,
         gitBranchSwitchRemote,
         gitCommitList,
+        gitBlame,
+        gitRevlist,
         gitRebase,
         gitGarbageCollection,
         gitClone,
@@ -165,6 +169,7 @@ class GitPlugin : public IPlugin
     wxString m_selectedFolder;
     clCommandProcessor* m_commandProcessor;
     clTabTogglerHelper::Ptr_t m_tabToggler;
+    GitBlameDlg* m_gitBlameDlg;
 
 private:
     void DoCreateTreeImages();
@@ -238,10 +243,12 @@ private:
     void OnStartGitk(wxCommandEvent& e);
     void OnStartGitkUI(wxUpdateUIEvent& e);
     void OnListModified(wxCommandEvent& e);
+    void OnGitBlame(wxCommandEvent& e);
     void OnRefresh(wxCommandEvent& e);
     void OnGarbageColletion(wxCommandEvent& e);
     void OnOpenMSYSGit(wxCommandEvent& e);
     void OnActiveProjectChanged(clProjectSettingsEvent& event);
+    void OnFileGitBlame(wxCommandEvent& event);
 
 #if 0
     void OnBisectStart(wxCommandEvent& e);
@@ -263,17 +270,17 @@ private:
 public:
     GitPlugin(IManager* manager);
     ~GitPlugin();
-    
+
     void StoreWorkspaceRepoDetails();
     void WorkspaceClosed();
-    
+
     /**
      * @brief fetch the next 100 commits (skip 'skip' first commits)
      * and show them in the commit list dialog
      * @param skip number of first commits to skip
      */
-    void FetchNextCommits(int skip);
-    
+    void FetchNextCommits(int skip, const wxString& args);
+
     GitConsole* GetConsole() { return m_console; }
     const wxString& GetRepositoryDirectory() const { return m_repositoryDirectory; }
     IProcess* GetProcess() { return m_process; }
@@ -293,6 +300,11 @@ public:
     void UndoAddFiles(const wxArrayString& files);
 
     void RefreshFileListView();
+
+    void DoGitBlame(const wxString& args);      // Called by OnGitBlame or the git blame dialog
+    wxString GetEditorRelativeFilepath() const; // Called by OnGitBlame or the git blame dialog
+    void OnGitBlameRevList(
+        const wxString& arg, const wxString& filepath, const wxString& commit = ""); // Called by the git blame dialog
 
     /**
      * @brief simple git command executioin completed. Display its output etc

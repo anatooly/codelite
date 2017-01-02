@@ -324,10 +324,6 @@ bool CodeLiteApp::OnInit()
 // EnableDebugPriv();
 #endif
 
-#ifdef USE_POSIX_LAYOUT
-    clStandardPaths::Get().IgnoreAppSubDir("bin");
-#endif
-
     // Init resources and add the PNG handler
     wxSystemOptions::SetOption(_T("msw.remap"), 0);
     wxSystemOptions::SetOption("msw.notebook.themed-background", 1);
@@ -493,7 +489,7 @@ bool CodeLiteApp::OnInit()
 #else //__WXMSW__
     if(homeDir.IsEmpty()) { // did we got a basedir from user?
 #ifdef USE_POSIX_LAYOUT
-        homeDir = clStandardPaths::Get().GetDataDir() + wxT(INSTALL_DIR);
+        homeDir = clStandardPaths::Get().GetDataDir();
 #else
         homeDir = ::wxGetCwd();
 #endif
@@ -543,15 +539,6 @@ bool CodeLiteApp::OnInit()
 
     // set the CTAGS_REPLACEMENT environment variable
     wxSetEnv(wxT("CTAGS_REPLACEMENTS"), ManagerST::Get()->GetStartupDirectory() + wxT("/ctags.replacements"));
-
-    long style = wxSIMPLE_BORDER;
-#if defined(__WXMSW__) || defined(__WXGTK__)
-    style |= wxFRAME_NO_TASKBAR;
-
-#else // Mac
-    wxUnusedVar(style);
-
-#endif
 
 // read the last frame size from the configuration file
 // Initialise editor configuration files
@@ -649,7 +636,7 @@ bool CodeLiteApp::OnInit()
 
 #elif defined(__WXMSW__)
 #ifdef USE_POSIX_LAYOUT
-        wxLocale::AddCatalogLookupPathPrefix(clStandardPaths::Get().GetDataDir() + wxT("/share/locale"));
+        wxLocale::AddCatalogLookupPathPrefix(clStandardPaths::Get().GetInstallDir() + wxT("\\share\\locale"));
 #else
         wxLocale::AddCatalogLookupPathPrefix(ManagerST::Get()->GetInstallDir() + wxT("\\locale"));
 #endif
@@ -942,12 +929,7 @@ void CodeLiteApp::DoCopyGdbPrinters()
 #ifdef __WXGTK__
     printersInstallDir = wxFileName(wxString(INSTALL_DIR, wxConvUTF8), "gdb_printers");
 #else
-#ifdef USE_POSIX_LAYOUT
-    wxString commdir(clStandardPaths::Get().GetDataDir() + wxT(INSTALL_DIR));
-    printersInstallDir = wxFileName(commdir, "gdb_printers");
-#else
     printersInstallDir = wxFileName(clStandardPaths::Get().GetDataDir(), "gdb_printers");
-#endif
 #endif
 
     // copy the files to ~/.codelite/gdb_printers

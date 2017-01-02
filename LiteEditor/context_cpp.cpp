@@ -132,6 +132,7 @@ struct SFileSort
 
 wxBitmap ContextCpp::m_cppFileBmp = wxNullBitmap;
 wxBitmap ContextCpp::m_hFileBmp = wxNullBitmap;
+wxBitmap ContextCpp::m_otherFileBmp = wxNullBitmap;
 
 BEGIN_EVENT_TABLE(ContextCpp, wxEvtHandler)
 EVT_UPDATE_UI(XRCID("find_decl"), ContextCpp::OnUpdateUI)
@@ -777,15 +778,31 @@ void ContextCpp::DisplayFilesCompletionBox(const wxString& word)
         wxCodeCompletionBox::BmpVec_t bitmaps;
         bitmaps.push_back(m_cppFileBmp);
         bitmaps.push_back(m_hFileBmp);
+        bitmaps.push_back(m_otherFileBmp);
         // Make sure that the file list is unique
         wxStringSet_t matches;
         for(size_t i = 0; i < files.GetCount(); ++i) {
             wxFileName fn(files.Item(i));
             if(matches.count(files.Item(i))) continue; // we already have this file in the list, don't add another one
             matches.insert(files.Item(i));
+
+            int imgID = 0;
+            switch(FileExtManager::GetType(fn.GetFullName())) {
+            case FileExtManager::TypeSourceC:
+            case FileExtManager::TypeSourceCpp:
+                imgID = 0;
+                break;
+            case FileExtManager::TypeHeader:
+                imgID = 1;
+                break;
+            default:
+                imgID = 2; // other
+                break;
+            }
+
             if(FileExtManager::GetType(fn.GetFullName()) == FileExtManager::TypeHeader ||
                FileExtManager::GetType(fn.GetFullName()) == FileExtManager::TypeOther) {
-                entries.push_back(wxCodeCompletionBoxEntry::New(files.Item(i), IsSource(fn.GetExt()) ? 0 : 1));
+                entries.push_back(wxCodeCompletionBoxEntry::New(files.Item(i), imgID));
             }
         }
         wxCodeCompletionBoxManager::Get().ShowCompletionBox(
@@ -1097,17 +1114,15 @@ void ContextCpp::OnSwapFiles(wxCommandEvent& event)
     SwapFiles(GetCtrl().GetFileName());
 }
 
-void ContextCpp::DoMakeDoxyCommentString(DoxygenComment& dc)
+void ContextCpp::DoMakeDoxyCommentString(DoxygenComment& dc, const wxString& blockPrefix)
 {
     CHECK_JS_RETURN_VOID();
     LEditor& editor = GetCtrl();
     CommentConfigData data;
     EditorConfigST::Get()->ReadObject(wxT("CommentConfigData"), &data);
 
-    wxString blockStart(wxT("/**\n"));
-    if(!data.GetUseSlash2Stars()) {
-        blockStart = wxT("/*!\n");
-    }
+    wxString blockStart = blockPrefix;
+    blockStart << "\n";
 
     // prepend the prefix to the
     wxString classPattern = data.GetClassPattern();
@@ -1183,7 +1198,7 @@ void ContextCpp::OnInsertDoxyComment(wxCommandEvent& event)
         // do we have a comment?
         if(dc.comment.IsEmpty()) return;
 
-        DoMakeDoxyCommentString(dc);
+        DoMakeDoxyCommentString(dc, data.GetCommentBlockPrefix());
         // To make the doxy block fit in, we need to prepend each line
         // with the exact whitespace of the current line
         wxString lineContent = editor.GetLine(editor.GetCurrentLine());
@@ -1975,6 +1990,7 @@ void ContextCpp::DoFormatEditor(LEditor* editor)
 {
     clSourceFormatEvent formatEvent(wxEVT_FORMAT_STRING);
     formatEvent.SetInputString(editor->GetText());
+    formatEvent.SetFileName(editor->GetFileName().GetFullPath());
     EventNotifier::Get()->ProcessEvent(formatEvent);
     if(!formatEvent.GetFormattedString().IsEmpty()) {
         editor->SetText(formatEvent.GetFormattedString());
@@ -1987,9 +2003,6 @@ void ContextCpp::OnFileSaved()
 
     if(!IsJavaScript()) {
         VariableList var_list;
-        std::map<std::string, Variable> var_map;
-        std::map<wxString, TagEntryPtr> foo_map;
-        std::map<std::string, std::string> ignoreTokens;
 
         wxArrayString varList;
         wxArrayString projectTags;
@@ -2057,11 +2070,12 @@ void ContextCpp::ApplySettings()
     DoApplySettings(lexPtr);
 
     // create all images used by the cpp context
-    if(m_cppFileBmp.IsOk() == false) {
+    if(!m_cppFileBmp.IsOk()) {
         // Initialise the file bitmaps
         BitmapLoader* bmpLoader = PluginManager::Get()->GetStdIcons();
-        m_cppFileBmp = bmpLoader->LoadBitmap(wxT("mime/16/cpp"));
-        m_hFileBmp = bmpLoader->LoadBitmap(wxT("mime/16/h"));
+        m_cppFileBmp = bmpLoader->LoadBitmap(wxT("mime-cpp"));
+        m_hFileBmp = bmpLoader->LoadBitmap(wxT("mime-h"));
+        m_otherFileBmp = bmpLoader->LoadBitmap(wxT("mime-txt"));
     }
 
     // delete uneeded commands
@@ -2170,7 +2184,8 @@ void ContextCpp::AutoAddComment()
         startPos -= 3; // for "/**"
         if(startPos >= 0) {
             wxString textTyped = rCtrl.GetTextRange(startPos, rCtrl.PositionBefore(curpos));
-            if(textTyped == "/**" && data.IsAutoInsertAfterSlash2Stars() && !IsJavaScript()) {
+            if(((textTyped == "/**") || (textTyped == "/*!")) && data.IsAutoInsertAfterSlash2Stars() &&
+               !IsJavaScript()) {
 
                 // Let the plugins/codelite check if they can provide a doxy comment
                 // for the current entry
@@ -2186,7 +2201,7 @@ void ContextCpp::AutoAddComment()
                     // do we have a comment?
                     if(dc.comment.IsEmpty()) return;
 
-                    DoMakeDoxyCommentString(dc);
+                    DoMakeDoxyCommentString(dc, data.GetCommentBlockPrefix());
                     // To make the doxy block fit in, we need to prepend each line
                     // with the exact whitespace of the line that starts with "/**"
                     int lineStartPos = rCtrl.PositionFromLine(rCtrl.LineFromPos(startPos));
@@ -2627,7 +2642,6 @@ void ContextCpp::DoCodeComplete(long pos)
         text.Prepend(globalText);
     }
 
-    std::vector<TagEntryPtr> candidates;
     if(showFuncProto) {
         // for function prototype, the last char entered was '(', this will break
         // the logic of the Getexpression() method to workaround this, we search for
@@ -3018,8 +3032,7 @@ wxString ContextCpp::GetExpression(long pos, bool onlyWord, LEditor* editor, boo
     CppScanner sc;
     sc.SetText(_C(expr));
     wxString expression;
-    int type = 0;
-    while((type = sc.yylex()) != 0) {
+    while((sc.yylex()) != 0) {
         wxString token = _U(sc.YYText());
         expression += token;
         expression += wxT(" ");

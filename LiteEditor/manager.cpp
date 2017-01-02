@@ -98,6 +98,9 @@
 #include "code_completion_manager.h"
 #include "CompileCommandsCreateor.h"
 #include "CompilersModifiedDlg.h"
+#include "fileutils.h"
+#include "NewProjectWizard.h"
+#include "clFileSystemEvent.h"
 #include "clWorkspaceManager.h"
 #include "clWorkspaceView.h"
 #include "clKeyboardManager.h"
@@ -315,7 +318,7 @@ void Manager::OpenWorkspace(const wxString& path)
         wxArrayString list;
         clCxxWorkspaceST::Get()->GetProjectList(list);
         if(!list.IsEmpty()) {
-            clCxxWorkspaceST::Get()->SetActiveProject(list.Item(0), true);
+            clCxxWorkspaceST::Get()->SetActiveProject(list.Item(0));
         }
     }
 
@@ -369,7 +372,7 @@ void Manager::DoSetupWorkspace(const wxString& path)
     }
 
     // Update the parser search paths
-    UpdateParserPaths();
+    UpdateParserPaths(false);
     clMainFrame::Get()->SelectBestEnvSet();
 
     // send an event to the main frame indicating that a re-tag is required
@@ -440,7 +443,7 @@ void Manager::CloseWorkspace()
     EnvironmentConfig::Instance()->SetSettings(vars);
     clMainFrame::Get()->SelectBestEnvSet();
 
-    UpdateParserPaths();
+    UpdateParserPaths(false);
     if(!IsShutdownInProgress()) {
         SendCmdEvent(wxEVT_WORKSPACE_CLOSED);
     }
@@ -475,7 +478,7 @@ void Manager::GetRecentlyOpenedWorkspaces(wxArrayString& files) { files = clConf
 
 //--------------------------- Workspace Projects Mgmt -----------------------------
 
-void Manager::CreateProject(ProjectData& data)
+void Manager::CreateProject(ProjectData& data, const wxString& workspaceFolder)
 {
     if(IsWorkspaceOpen() == false) {
         // create a workspace before creating a project
@@ -483,8 +486,8 @@ void Manager::CreateProject(ProjectData& data)
     }
 
     wxString errMsg;
-    bool res = clCxxWorkspaceST::Get()->CreateProject(
-        data.m_name, data.m_path, data.m_srcProject->GetSettings()->GetProjectType(wxEmptyString), false, errMsg);
+    bool res = clCxxWorkspaceST::Get()->CreateProject(data.m_name, data.m_path,
+        data.m_srcProject->GetSettings()->GetProjectType(wxEmptyString), workspaceFolder, false, errMsg);
     if(!res) {
         wxMessageBox(errMsg, _("Error"), wxOK | wxICON_HAND);
         return;
@@ -718,8 +721,7 @@ wxString Manager::GetActiveProjectName() { return clCxxWorkspaceST::Get()->GetAc
 
 void Manager::SetActiveProject(const wxString& name)
 {
-    clCxxWorkspaceST::Get()->SetActiveProject(clCxxWorkspaceST::Get()->GetActiveProjectName(), false);
-    clCxxWorkspaceST::Get()->SetActiveProject(name, true);
+    clCxxWorkspaceST::Get()->SetActiveProject(name);
     clMainFrame::Get()->SelectBestEnvSet();
 
     // Notify about the change
@@ -925,27 +927,36 @@ void Manager::RetagWorkspace(TagsManager::RetagType type)
     }
 
     // Incase anything was changed, update the parser search paths
-    UpdateParserPaths();
+    clDEBUG() << "Updating parser paths..." << clEndl;
+    UpdateParserPaths(false);
+    clDEBUG() << "Updating parser paths...done" << clEndl;
 
+    clDEBUG() << "Fetching project list..." << clEndl;
     // Start the parsing by collecing list of files to parse
     wxArrayString projects;
     GetProjectList(projects);
 
+    clDEBUG() << "Fetching project list...done" << clEndl;
     std::vector<wxFileName> projectFiles;
     for(size_t i = 0; i < projects.GetCount(); i++) {
         ProjectPtr proj = GetProject(projects.Item(i));
         if(proj) {
+            clDEBUG() << "Fetching files for project:" << proj->GetName() << clEndl;
             proj->GetFiles(projectFiles, true);
+            clDEBUG() << "Fetching files for project:" << proj->GetName() << "...done" << clEndl;
         }
     }
 
     // Create a parsing request
     ParseRequest* parsingRequest = new ParseRequest(clMainFrame::Get());
+    clDEBUG() << "Filtering non relevant files..." << clEndl;
     for(size_t i = 0; i < projectFiles.size(); i++) {
         // filter any non valid coding file
         if(!TagsManagerST::Get()->IsValidCtagsFile(projectFiles.at(i))) continue;
         parsingRequest->_workspaceFiles.push_back(projectFiles.at(i).GetFullPath().mb_str(wxConvUTF8).data());
     }
+
+    clDEBUG() << "Filtering non relevant files...done" << clEndl;
 
     if(parsingRequest->_workspaceFiles.empty()) {
         SetRetagInProgress(false);
@@ -1216,11 +1227,10 @@ bool Manager::RenameFile(const wxString& origName, const wxString& newName, cons
     // Step: 2
     // Notify the plugins, maybe they want to override the
     // default behavior (e.g. Subversion plugin)
-    wxArrayString f;
-    f.Add(origName);
-    f.Add(newName);
-
-    if(!SendCmdEvent(wxEVT_FILE_RENAMED, (void*)&f)) {
+    clFileSystemEvent renameEvent(wxEVT_FILE_RENAMED);
+    renameEvent.SetOldName(origName);
+    renameEvent.SetNewpath(newName);
+    if(!EventNotifier::Get()->ProcessEvent(renameEvent)) {
         // rename the file on filesystem
         wxLogNull noLog;
         wxRenameFile(origName, newName);
@@ -1515,21 +1525,12 @@ wxString Manager::GetProjectExecutionCommand(const wxString& projectName, wxStri
         ProjectPtr proj = GetProject(projectName);
 
 #if defined(__WXMAC__)
-        wxString newCommand;
-        newCommand << "/usr/bin/open " << fnCodeliteTerminal.GetPath(true) << "codelite-terminal.app --args ";
-        newCommand << " --exit ";
-        if(bldConf->GetPauseWhenExecEnds()) {
-            newCommand << " --wait ";
-        }
-
         wxFileName fnWD(wd, "");
         if(fnWD.IsRelative()) {
             fnWD.MakeAbsolute(GetProject(projectName)->GetFileName().GetPath());
         }
-        newCommand << " --working-directory \"" << fnWD.GetFullPath() << "\" --title \"" << title << "\" --cmd "
-                   << title;
-        execLine = newCommand;
-
+        execLine = FileUtils::GetOSXTerminalCommand(cmd + " " + cmdArgs, fnWD.GetPath());
+        
 #elif defined(__WXGTK__)
 
         // Set a console to the execute target
@@ -3351,6 +3352,8 @@ void Manager::DoShowQuickWatchDialog(const DebuggerEventData& event)
 
 void Manager::UpdateParserPaths(bool notify)
 {
+    wxBusyCursor bc;
+
     wxArrayString localIncludePaths;
     wxArrayString localExcludePaths;
     wxArrayString projectIncludePaths;
@@ -3754,4 +3757,35 @@ bool Manager::IsDebuggerViewVisible(const wxString& name)
 
     // Also test if the pane is detached
     return IsPaneVisible(name);
+}
+
+void Manager::ShowNewProjectWizard(const wxString& workspaceFolder)
+{
+    wxFrame* mainFrame = EventNotifier::Get()->TopFrame();
+    clNewProjectEvent newProjectEvent(wxEVT_NEW_PROJECT_WIZARD_SHOWING);
+    newProjectEvent.SetEventObject(mainFrame);
+    if(EventNotifier::Get()->ProcessEvent(newProjectEvent)) {
+        return;
+    }
+
+    NewProjectWizard wiz(mainFrame, newProjectEvent.GetTemplates());
+    if(wiz.RunWizard(wiz.GetFirstPage())) {
+
+        ProjectData data = wiz.GetProjectData();
+
+        // Try the plugins first
+        clNewProjectEvent finishEvent(wxEVT_NEW_PROJECT_WIZARD_FINISHED);
+        finishEvent.SetEventObject(mainFrame);
+        finishEvent.SetToolchain(data.m_cmpType);
+        finishEvent.SetDebugger(data.m_debuggerType);
+        finishEvent.SetProjectName(data.m_name);
+        finishEvent.SetProjectFolder(data.m_path);
+        finishEvent.SetTemplateName(data.m_sourceTemplate);
+        if(EventNotifier::Get()->ProcessEvent(finishEvent)) {
+            return;
+        }
+
+        // Carry on with the default behaviour
+        CreateProject(data, workspaceFolder);
+    }
 }
