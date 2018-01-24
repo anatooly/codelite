@@ -38,7 +38,9 @@
 #include <vector>
 #include "debugger.h"
 #include "clStatusBar.h"
+#include "clTab.h"
 
+class clEditorBar;
 class clWorkspaceView;
 class TagsManager;
 class clCxxWorkspace;
@@ -72,23 +74,6 @@ public:
 enum TreeType { TreeFileView = 0, TreeFileExplorer };
 
 enum eOutputPaneTab { kOutputTab_Build, kOutputTab_Output };
-
-// A struct representing a tab in the notebook control
-struct clTab {
-    typedef std::vector<clTab> Vec_t;
-    wxString text;
-    wxWindow* window;
-    wxBitmap bitmap;
-    bool isFile;
-    wxFileName filename;
-    bool isModified;
-    clTab()
-        : window(NULL)
-        , isFile(false)
-        , isModified(false)
-    {
-    }
-};
 
 //------------------------------------------------------------------
 // Defines the interface of the manager
@@ -177,20 +162,26 @@ public:
     virtual clStatusBar* GetStatusBar() = 0;
 
     /**
+     * @brief return the navigation bar (the one that contains the "File Name" + class::func location at the bottom of
+     * the editor)
+     * @return
+     */
+    virtual clEditorBar* GetNavigationBar() = 0;
+    /**
      * @brief open file and make it the active editor
      * @param fileName the file to open - use absolute path
      * @param projectName project to associate this file - can be wxEmptyString
      * @param lineno if lineno is not wxNOT_FOUD, the caret will placed on this line number
      * @return true if file opened
      */
-    virtual IEditor* OpenFile(
-        const wxString& fileName, const wxString& projectName = wxEmptyString, int lineno = wxNOT_FOUND) = 0;
+    virtual IEditor* OpenFile(const wxString& fileName, const wxString& projectName = wxEmptyString,
+                              int lineno = wxNOT_FOUND) = 0;
 
     /**
      * @brief open a file with a given tooltip and bitmap
      */
-    virtual IEditor* OpenFile(
-        const wxString& fileName, const wxBitmap& bmp, const wxString& tooltip = wxEmptyString) = 0;
+    virtual IEditor* OpenFile(const wxString& fileName, const wxBitmap& bmp,
+                              const wxString& tooltip = wxEmptyString) = 0;
 
     /**
      * @brief Open file using browsing record
@@ -267,7 +258,7 @@ public:
     virtual void AddProject(const wxString& path) = 0;
 
     /**
-     * @brief return true of a workspace is already open
+     * @brief return true if a workspace is already open
      */
     virtual bool IsWorkspaceOpen() const = 0;
 
@@ -501,7 +492,7 @@ public:
      * @brief add a page to the mainbook
      */
     virtual bool AddPage(wxWindow* win, const wxString& text, const wxString& tooltip = wxEmptyString,
-        const wxBitmap& bmp = wxNullBitmap, bool selected = false) = 0;
+                         const wxBitmap& bmp = wxNullBitmap, bool selected = false) = 0;
 
     /**
      * @brief select a window in mainbook

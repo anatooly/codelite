@@ -555,6 +555,8 @@ bool DbgGdb::Continue() { return WriteCommand("-exec-continue", new DbgCmdHandle
 
 bool DbgGdb::StepIn() { return WriteCommand(wxT("-exec-step"), new DbgCmdHandlerAsyncCmd(m_observer, this)); }
 
+bool DbgGdb::StepInInstruction() { return WriteCommand(wxT("-exec-step-instruction"), new DbgCmdHandlerAsyncCmd(m_observer, this)); }
+
 bool DbgGdb::StepOut() { return WriteCommand(wxT("-exec-finish"), new DbgCmdHandlerAsyncCmd(m_observer, this)); }
 
 bool DbgGdb::IsRunning() { return m_gdbProcess != NULL; }
@@ -695,7 +697,7 @@ void DbgGdb::Poke()
             if(curline.IsEmpty() == false && !tmpline.StartsWith(wxT(">"))) {
                 wxString strdebug(wxT("DEBUG>>"));
                 strdebug << curline;
-                CL_DEBUG(strdebug);
+                clDEBUG() << strdebug << clEndl;
                 m_observer->UpdateAddLine(strdebug);
             }
         }

@@ -24,21 +24,21 @@
 //////////////////////////////////////////////////////////////////////////////
 
 #include "LLDBConnector.h"
-#include "LLDBNetworkListenerThread.h"
 #include "LLDBEvent.h"
+#include "LLDBNetworkListenerThread.h"
+#include "LLDBRemoteHandshakePacket.h"
+#include "LLDBSettings.h"
+#include "cl_standard_paths.h"
+#include "environmentconfig.h"
 #include "file_logger.h"
+#include "fileutils.h"
+#include "globals.h"
+#include "json_node.h"
 #include "processreaderthread.h"
-#include <wx/tokenzr.h>
-#include "file_logger.h"
 #include <wx/filefn.h>
 #include <wx/log.h>
-#include "environmentconfig.h"
-#include "json_node.h"
 #include <wx/msgdlg.h>
-#include "LLDBSettings.h"
-#include "globals.h"
-#include "LLDBRemoteHandshakePacket.h"
-#include "cl_standard_paths.h"
+#include <wx/tokenzr.h>
 
 #ifndef __WXMSW__
 #include <sys/wait.h>
@@ -75,7 +75,7 @@ bool LLDBConnector::ConnectToLocalDebugger(LLDBConnectReturnObject& ret, int tim
 #ifndef __WXMSW__
     clSocketClient* client = new clSocketClient();
     m_socket.reset(client);
-    CL_DEBUG("Connecting to codelite-lldb on %s", GetDebugServerPath());
+    clDEBUG() << "Connecting to codelite-lldb on:" << GetDebugServerPath();
 
     long msTimeout = timeout * 1000;
     long retriesCount = msTimeout / 250; // We try every 250 ms to connect
@@ -89,9 +89,7 @@ bool LLDBConnector::ConnectToLocalDebugger(LLDBConnectReturnObject& ret, int tim
         break;
     }
 
-    if(!connected) {
-        return false;
-    }
+    if(!connected) { return false; }
 
     // Start the lldb event thread
     // and start a listener thread which will read replies
@@ -100,10 +98,10 @@ bool LLDBConnector::ConnectToLocalDebugger(LLDBConnectReturnObject& ret, int tim
     m_pivot.Clear();
     m_thread = new LLDBNetworkListenerThread(this, m_pivot, fd);
     m_thread->Start();
-    CL_DEBUG("Successfully connected to codelite-lldb");
+    clDEBUG() << "Successfully connected to codelite-lldb";
     return true;
 #else
-    CL_WARNING("LLDB Debugger: can't connect to local debugger - this is not support on MSW");
+    clWARNING() << "LLDB Debugger: can't connect to local debugger - this is not support on MSW";
     return false;
 #endif
 }
@@ -113,7 +111,7 @@ bool LLDBConnector::ConnectToRemoteDebugger(const wxString& ip, int port, LLDBCo
     m_socket.reset(NULL);
     clSocketClient* client = new clSocketClient();
     m_socket.reset(client);
-    CL_DEBUG("Connecting to codelite-lldb on %s:%d", ip, port);
+    clDEBUG() << "Connecting to codelite-lldb on" << ip << ":" << port;
 
     try {
         bool would_block = false;
@@ -130,7 +128,7 @@ bool LLDBConnector::ConnectToRemoteDebugger(const wxString& ip, int port, LLDBCo
                     return false;
                 }
             } catch(clSocketException& e) {
-                CL_DEBUG("SelectWrite error: %s", e.what());
+                clDEBUG() << "SelectWrite error:" << e.what();
             }
         }
 
@@ -147,11 +145,11 @@ bool LLDBConnector::ConnectToRemoteDebugger(const wxString& ip, int port, LLDBCo
         ret.SetPivotNeeded(handshake.GetHost() != ::wxGetHostName());
 
     } catch(clSocketException& e) {
-        CL_WARNING("LLDBConnector::ConnectToRemoteDebugger: %s", e.what());
+        clWARNING() << "LLDBConnector::ConnectToRemoteDebugger:" << e.what();
         m_socket.reset(NULL);
         return false;
     }
-    CL_DEBUG("Successfully connected to codelite-lldb");
+    clDEBUG() << "Successfully connected to codelite-lldb";
     return true;
 }
 
@@ -177,9 +175,7 @@ void LLDBConnector::InvalidateBreakpoints()
 
     for(size_t i = 0; i < m_breakpoints.size(); ++i) {
         m_breakpoints.at(i)->Invalidate();
-        if(wxFileName::Exists(m_breakpoints.at(i)->GetFilename())) {
-            updatedList.push_back(m_breakpoints.at(i));
-        }
+        if(wxFileName::Exists(m_breakpoints.at(i)->GetFilename())) { updatedList.push_back(m_breakpoints.at(i)); }
     }
     // we keep only breakpoints with valid filename
     m_breakpoints.swap(updatedList);
@@ -198,9 +194,7 @@ LLDBBreakpoint::Vec_t::iterator LLDBConnector::FindBreakpoint(LLDBBreakpoint::Pt
 {
     LLDBBreakpoint::Vec_t::iterator iter = m_breakpoints.begin();
     for(; iter != m_breakpoints.end(); ++iter) {
-        if((*iter)->SameAs(bp)) {
-            return iter;
-        }
+        if((*iter)->SameAs(bp)) { return iter; }
     }
     return m_breakpoints.end();
 }
@@ -209,9 +203,7 @@ LLDBBreakpoint::Vec_t::const_iterator LLDBConnector::FindBreakpoint(LLDBBreakpoi
 {
     LLDBBreakpoint::Vec_t::const_iterator iter = m_breakpoints.begin();
     for(; iter != m_breakpoints.end(); ++iter) {
-        if((*iter)->SameAs(bp)) {
-            return iter;
-        }
+        if((*iter)->SameAs(bp)) { return iter; }
     }
     return m_breakpoints.end();
 }
@@ -280,9 +272,7 @@ void LLDBConnector::Detach()
 
 void LLDBConnector::MarkBreakpointForDeletion(LLDBBreakpoint::Ptr_t bp)
 {
-    if(!IsBreakpointExists(bp)) {
-        return;
-    }
+    if(!IsBreakpointExists(bp)) { return; }
 
     LLDBBreakpoint::Vec_t::iterator iter = FindBreakpoint(bp);
 
@@ -438,7 +428,7 @@ const LLDBBreakpoint::Vec_t& LLDBConnector::GetAllBreakpoints() const { return m
 void LLDBConnector::OnProcessOutput(clProcessEvent& event)
 {
     wxString output = event.GetOutput();
-    
+
     wxArrayString lines = ::wxStringTokenize(output, "\n", wxTOKEN_STRTOK);
     for(size_t i = 0; i < lines.GetCount(); ++i) {
         CL_DEBUG("%s", lines.Item(i).Trim());
@@ -463,13 +453,13 @@ bool LLDBConnector::LaunchLocalDebugServer()
 {
 #if !BUILD_CODELITE_LLDB
     // Not supported :(
-    ::wxMessageBox(_("Locally debugging with LLDB on Windows is not supported by LLDB"),
-                   "CodeLite",
+    ::wxMessageBox(_("Locally debugging with LLDB on Windows is not supported by LLDB"), "CodeLite",
                    wxICON_WARNING | wxOK | wxCENTER);
     return false;
-#endif 
+#endif
 
-    CL_DEBUG("Launching codelite-lldb");
+    clDEBUG() << "Launching codelite-lldb";
+
     // Start the debugger
     if(m_process) {
         // another debugger process is already running
@@ -477,28 +467,23 @@ bool LLDBConnector::LaunchLocalDebugServer()
     }
 
     // Apply the environment before we start
-    wxStringMap_t om;
-
-#ifdef __WXMAC__
     // set the LLDB_DEBUGSERVER_PATH env variable
-    wxFileName debugserver(clStandardPaths::Get().GetBinaryFullPath("debugserver"));
-    om["LLDB_DEBUGSERVER_PATH"] = debugserver.GetFullPath();
-#endif
+    wxStringMap_t om;
+    om["LLDB_DEBUGSERVER_PATH"] = m_debugserver;
 
     EnvSetter es(NULL, &om);
-
     wxFileName fnCodeLiteLLDB(clStandardPaths::Get().GetBinaryFullPath("codelite-lldb"));
 
     wxString command;
     command << fnCodeLiteLLDB.GetFullPath() << " -s " << GetDebugServerPath();
-
+    clDEBUG() << "LLDB_DEBUGSERVER_PATH is set to" << m_debugserver;
     m_process = ::CreateAsyncProcess(this, command);
     if(!m_process) {
-        CL_ERROR("LLDBConnector: failed to launch codelite-lldb: %s", fnCodeLiteLLDB.GetFullPath());
+        clERROR() << "LLDBConnector: failed to launch codelite-lldb:" << fnCodeLiteLLDB.GetFullPath();
         return false;
 
     } else {
-        CL_DEBUG("codelite-lldb launched successfully. PID=%d\n", m_process->GetPid());
+        clDEBUG() << "codelite-lldb launched successfully. PID=" << m_process->GetPid();
     }
     return true;
 }
@@ -512,16 +497,14 @@ void LLDBConnector::StopDebugServer()
     }
 
     wxLogNull noLog;
-    wxRemoveFile(GetDebugServerPath());
+    clRemoveFile(GetDebugServerPath());
 }
 
 LLDBBreakpoint::Vec_t LLDBConnector::GetUnappliedBreakpoints()
 {
     LLDBBreakpoint::Vec_t unappliedBreakpoints;
     for(size_t i = 0; i < m_breakpoints.size(); ++i) {
-        if(!m_breakpoints.at(i)->IsApplied()) {
-            unappliedBreakpoints.push_back(m_breakpoints.at(i));
-        }
+        if(!m_breakpoints.at(i)->IsApplied()) { unappliedBreakpoints.push_back(m_breakpoints.at(i)); }
     }
     return unappliedBreakpoints;
 }
@@ -625,6 +608,7 @@ wxString LLDBConnector::GetConnectString() const
 bool LLDBConnector::Connect(LLDBConnectReturnObject& ret, const LLDBSettings& settings, int timeout)
 {
     ret.Clear();
+    m_debugserver = settings.GetDebugserver();
     if(settings.IsUsingRemoteProxy()) {
         return ConnectToRemoteDebugger(settings.GetProxyIp(), settings.GetProxyPort(), ret, timeout);
 

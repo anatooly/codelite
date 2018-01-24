@@ -81,7 +81,7 @@ bool PHPWorkspace::Close(bool saveBeforeClose, bool saveSession)
     // Close the code completion lookup table
     PHPCodeCompletion::Instance()->Close();
     PHPParserThread::Clear();
-    
+
     PHPEvent phpEvent(wxEVT_PHP_WORKSPACE_CLOSED);
     EventNotifier::Get()->AddPendingEvent(phpEvent);
 
@@ -520,7 +520,7 @@ void PHPWorkspace::ParseWorkspace(bool full)
         fnDatabaseFile.AppendDir(".codelite");
 
         wxLogNull noLog;
-        bool bRemoved = ::wxRemoveFile(fnDatabaseFile.GetFullPath());
+        bool bRemoved = clRemoveFile(fnDatabaseFile.GetFullPath());
         wxUnusedVar(bRemoved);
 
         // Start the managers again
@@ -676,11 +676,19 @@ void PHPWorkspace::SyncWithFileSystemAsync(wxEvtHandler* owner)
         clCommandEvent event(wxEVT_PHP_WORKSPACE_FILES_SYNC_START);
         owner->AddPendingEvent(event);
     }
-
-    PHPProject::Map_t::const_iterator iter = m_projects.begin();
-    for(; iter != m_projects.end(); ++iter) {
-        m_inSyncProjects.insert(iter->first);
-        iter->second->SyncWithFileSystemAsync(this);
+    
+    if(!m_projects.empty()) {
+        PHPProject::Map_t::const_iterator iter = m_projects.begin();
+        for(; iter != m_projects.end(); ++iter) {
+            m_inSyncProjects.insert(iter->first);
+            iter->second->SyncWithFileSystemAsync(this);
+        }
+    } else {
+        if(owner) {
+            // Fire sync-ended event
+            clCommandEvent endEvent(wxEVT_PHP_WORKSPACE_FILES_SYNC_END);
+            owner->AddPendingEvent(endEvent);
+        }
     }
 }
 
@@ -711,3 +719,22 @@ void PHPWorkspace::OnProjectSyncEnd(clCommandEvent& event)
         }
     }
 }
+wxFileName PHPWorkspace::GetProjectFileName(const wxString& projectName) const
+{
+    PHPProject::Ptr_t p = GetProject(projectName);
+    if(!p) {
+        return wxFileName();
+    }
+    return p->GetFilename();
+}
+
+wxArrayString PHPWorkspace::GetWorkspaceProjects() const
+{
+    wxArrayString projectArr;
+    PHPProject::Map_t projects = GetProjects();
+    std::for_each(projects.begin(), projects.end(), [&](PHPProject::Map_t::value_type p) {
+        projectArr.Add(p.second->GetName());
+    });
+    return projectArr;
+}
+

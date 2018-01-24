@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<CodeLite_Project Name="plugin_sdk">
+<CodeLite_Project Name="plugin_sdk" Version="10.0.0">
+  <Reconciliation>
+    <Regexes/>
+    <Excludepaths/>
+    <Ignorefiles/>
+    <Extensions>
+      <![CDATA[*.cpp;*.c;*.h;*.hpp;*.xrc;*.wxcp;*.fbp]]>
+    </Extensions>
+    <Topleveldir>/src/codelite/Plugin</Topleveldir>
+  </Reconciliation>
   <Plugins>
     <Plugin Name="qmake">
       <![CDATA[00060001N0015WinDebugUnicode0000000000000001N0011WinDebug_290000000000000001N0017WinReleaseUnicode0000000000000001N0013WinRelease_290000000000000001N0013Win_x64_Debug0000000000000001N0015Win_x64_Release000000000000]]>
@@ -173,6 +182,7 @@
     <File Name="queuecommand.h"/>
     <File Name="shell_command.h"/>
     <File Name="wxArrayStringAppender.h"/>
+    <File Name="clStrings.h"/>
   </VirtualDirectory>
   <VirtualDirectory Name="Commons">
     <File Name="xmlutils.cpp"/>
@@ -199,6 +209,16 @@
     <File Name="clStringHistory.cpp"/>
     <File Name="clFindResultsStyler.h"/>
     <File Name="clFindResultsStyler.cpp"/>
+    <File Name="phpoptions.cpp"/>
+    <File Name="phpoptions.h"/>
+    <File Name="clStatusBarMessage.h"/>
+    <File Name="clStatusBarMessage.cpp"/>
+    <File Name="cProjectDependecySorter.h"/>
+    <File Name="cProjectDependecySorter.cpp"/>
+    <File Name="clProfileHandler.h"/>
+    <File Name="clProfileHandler.cpp"/>
+    <File Name="clGotoAnythingManager.h"/>
+    <File Name="clGotoAnythingManager.cpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="Builders">
     <File Name="builder.h"/>
@@ -329,6 +349,10 @@
       <File Name="clTreeKeyboardInput.cpp"/>
       <File Name="clBitmapOverlayCtrl.h"/>
       <File Name="clBitmapOverlayCtrl.cpp"/>
+      <File Name="clTreeCtrlColourHelper.h"/>
+      <File Name="clTreeCtrlColourHelper.cpp"/>
+      <File Name="clEditorBar.h"/>
+      <File Name="clEditorBar.cpp"/>
     </VirtualDirectory>
     <VirtualDirectory Name="Dialogs">
       <File Name="nameanddescdlg.h"/>
@@ -358,8 +382,15 @@
       <File Name="clSelectSymbolDialog.cpp"/>
       <File Name="nameanddescdlg.wxcp"/>
       <File Name="envvar_table_dlg.wxcp"/>
+      <File Name="GotoAnythingDlg.cpp"/>
+      <File Name="GotoAnythingDlg.h"/>
     </VirtualDirectory>
     <VirtualDirectory Name="Notebook">
+      <File Name="clTab.h"/>
+      <File Name="clTabHistory.cpp"/>
+      <File Name="clTabHistory.h"/>
+      <File Name="clAuiNotebook.cpp"/>
+      <File Name="clAuiNotebook.h"/>
       <File Name="drawingutils.cpp"/>
       <File Name="drawingutils.h"/>
       <File Name="dockablepane.cpp"/>
@@ -379,6 +410,8 @@
       <File Name="clTabRendererCurved.cpp"/>
       <File Name="clTabRendererSquare.h"/>
       <File Name="clTabRendererSquare.cpp"/>
+      <File Name="clTabRendererClassic.h"/>
+      <File Name="clTabRendererClassic.cpp"/>
     </VirtualDirectory>
     <VirtualDirectory Name="wxAUI">
       <File Name="cl_aui_dock_art.h"/>
@@ -410,6 +443,8 @@
     <File Name="clMouseCaptureLocker.cpp"/>
     <File Name="clMainFrameHelper.h"/>
     <File Name="clMainFrameHelper.cpp"/>
+    <File Name="VirtualDirectoryColour.h"/>
+    <File Name="VirtualDirectoryColour.cpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="JobQueue">
     <File Name="jobqueue.cpp"/>
@@ -466,6 +501,7 @@
       <File Name="nameanddescdlg_plugin_bitmaps.cpp"/>
       <File Name="MacrosBaseDlg_plugin_bitmaps.cpp"/>
       <File Name="EnvironmentVariablesDlgBaseBitmaps.cpp"/>
+      <File Name="GotoAnythingBaseUI_plugin_bitmaps.cpp"/>
     </VirtualDirectory>
     <VirtualDirectory Name="base">
       <File Name="VirtualDirectorySelectorBase.h"/>
@@ -488,6 +524,8 @@
       <File Name="clSelectSymbolDialogBase.cpp"/>
       <File Name="EnvironmentVariablesDlgBase.h"/>
       <File Name="EnvironmentVariablesDlgBase.cpp"/>
+      <File Name="GotoAnythingBaseUI.h"/>
+      <File Name="GotoAnythingBaseUI.cpp"/>
     </VirtualDirectory>
     <File Name="openresourcedialogbase.wxcp"/>
     <File Name="plugin_general_wxcp.wxcp"/>
@@ -496,6 +534,7 @@
     <File Name="WSImporterDlgs.wxcp"/>
     <File Name="clSelectSymbolDialogBase.wxcp"/>
     <File Name="MacrosBaseDlg.wxcp"/>
+    <File Name="GotoAnythingBaseUI.wxcp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="sftp_ui">
     <File Name="AddSSHAcountDlg.cpp"/>
@@ -517,6 +556,8 @@
     <File Name="SSHTerminal.cpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="Diff">
+    <File Name="clDiffFrame.cpp"/>
+    <File Name="clDiffFrame.h"/>
     <VirtualDirectory Name="dtl">
       <File Name="dtl/Diff.hpp"/>
       <File Name="dtl/Diff3.hpp"/>
@@ -533,6 +574,8 @@
     <File Name="DiffSideBySidePanel.cpp"/>
     <File Name="DiffConfig.h"/>
     <File Name="DiffConfig.cpp"/>
+    <File Name="clPatch.h"/>
+    <File Name="clPatch.cpp"/>
   </VirtualDirectory>
   <VirtualDirectory Name="Compilers">
     <File Name="ICompilerLocator.h"/>
@@ -583,6 +626,9 @@
   <VirtualDirectory Name="NodeJS">
     <File Name="NodeJSLocator.h"/>
     <File Name="NodeJSLocator.cpp"/>
+    <File Name="clJSCTags.cpp"/>
+    <File Name="clJSCTags.h"/>
+    <File Name="jsctags.zip"/>
   </VirtualDirectory>
   <Settings Type="Dynamic Library">
     <GlobalSettings>
@@ -851,6 +897,12 @@
   <Dependencies Name="Custom"/>
   <Dependencies Name="Win_wxWidgets_29"/>
   <Dependencies Name="Win_x64_Debug"/>
-  <Dependencies Name="Win_x64_Release"/>
   <Dependencies Name="Win_x86_Release"/>
+  <Dependencies Name="Win_x64_Release">
+    <Project Name="libCodeLite"/>
+    <Project Name="sqlite3"/>
+    <Project Name="wxsqlite3"/>
+    <Project Name="databaselayer_sqlite"/>
+    <Project Name="wxshapeframework"/>
+  </Dependencies>
 </CodeLite_Project>

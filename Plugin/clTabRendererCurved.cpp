@@ -1,7 +1,8 @@
 #include "clTabRendererCurved.h"
+#if !USE_AUI_NOTEBOOK
+#include <wx/dcmemory.h>
 #include <wx/font.h>
 #include <wx/settings.h>
-#include <wx/dcmemory.h>
 
 #define DRAW_LINE(__p1, __p2) \
     dc.DrawLine(__p1, __p2);  \
@@ -20,14 +21,15 @@ clTabRendererCurved::clTabRendererCurved()
 
 clTabRendererCurved::~clTabRendererCurved() {}
 
-void clTabRendererCurved::Draw(wxDC& dc, const clTabInfo& tabInfo, const clTabColours& colours, size_t style)
+void clTabRendererCurved::Draw(wxWindow* parent, wxDC& dc, wxDC& fontDC, const clTabInfo& tabInfo,
+                               const clTabColours& colours, size_t style)
 {
     const int TOP_SMALL_HEIGHT = 0;
     wxColour bgColour(tabInfo.IsActive() ? colours.activeTabBgColour : colours.inactiveTabBgColour);
     wxColour penColour(tabInfo.IsActive() ? colours.activeTabPenColour : colours.inactiveTabPenColour);
-    wxFont font = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
-    dc.SetTextForeground(tabInfo.IsActive() ? colours.activeTabTextColour : colours.inactiveTabTextColour);
-    dc.SetFont(font);
+    wxFont font = GetTabFont();
+    fontDC.SetTextForeground(tabInfo.IsActive() ? colours.activeTabTextColour : colours.inactiveTabTextColour);
+    fontDC.SetFont(font);
 
     if(style & kNotebook_BottomTabs) {
         // Bottom tabs
@@ -167,13 +169,12 @@ void clTabRendererCurved::Draw(wxDC& dc, const clTabInfo& tabInfo, const clTabCo
 
         // Vertical tabs
         // Draw bitmap
-        if(tabInfo.GetBitmap().IsOk()) {
-            tmpDC.DrawBitmap(tabInfo.GetBitmap(), tabInfo.m_bmpY, tabInfo.m_bmpX);
-        }
+        if(tabInfo.GetBitmap().IsOk()) { tmpDC.DrawBitmap(tabInfo.GetBitmap(), tabInfo.m_bmpY, tabInfo.m_bmpX); }
 
         tmpDC.DrawText(tabInfo.m_label, tabInfo.m_textY, tabInfo.m_textX);
         if(tabInfo.IsActive() && (style & kNotebook_CloseButtonOnActiveTab)) {
-            tmpDC.DrawBitmap(colours.closeButton, tabInfo.m_bmpCloseY, tabInfo.m_bmpCloseX);
+            DrawButton(tmpDC, wxRect(tabInfo.m_bmpCloseX, tabInfo.m_bmpCloseY, CLOSE_BUTTON_SIZE, CLOSE_BUTTON_SIZE),
+                       colours, eButtonState::kNormal);
         }
         tmpDC.SelectObject(wxNullBitmap);
         wxImage img = b.ConvertToImage();
@@ -237,36 +238,19 @@ void clTabRendererCurved::Draw(wxDC& dc, const clTabInfo& tabInfo, const clTabCo
         if(tabInfo.GetBitmap().IsOk()) {
             dc.DrawBitmap(tabInfo.GetBitmap(), tabInfo.m_bmpX + tabInfo.m_rect.GetX(), tabInfo.m_bmpY);
         }
-        dc.DrawText(tabInfo.m_label, tabInfo.m_textX + tabInfo.m_rect.GetX(), tabInfo.m_textY);
+        fontDC.DrawText(tabInfo.m_label, tabInfo.m_textX + tabInfo.m_rect.GetX(), tabInfo.m_textY);
         if(tabInfo.IsActive() && (style & kNotebook_CloseButtonOnActiveTab)) {
-            dc.DrawBitmap(colours.closeButton, tabInfo.m_bmpCloseX + tabInfo.m_rect.GetX(), tabInfo.m_bmpCloseY);
+            DrawButton(dc,
+                       wxRect(tabInfo.m_bmpCloseX + tabInfo.m_rect.GetX(), tabInfo.m_bmpCloseY, CLOSE_BUTTON_SIZE,
+                              CLOSE_BUTTON_SIZE),
+                       colours, eButtonState::kNormal);
         }
     }
 }
 
-void clTabRendererCurved::DrawBottomRect(
-    clTabInfo::Ptr_t activeTab, const wxRect& clientRect, wxDC& dc, const clTabColours& colours, size_t style)
+void clTabRendererCurved::DrawBottomRect(wxWindow* parent, clTabInfo::Ptr_t activeTab, const wxRect& clientRect,
+                                         wxDC& dc, const clTabColours& colours, size_t style)
 {
-#ifdef __WXOSX__
-    if(!IS_VERTICAL_TABS(style)) {
-        wxPoint pt1, pt2;
-        dc.SetPen(colours.activeTabBgColour);
-        if(style & kNotebook_BottomTabs) {
-            // bottom tabs
-            pt1 = clientRect.GetTopLeft();
-            pt2 = clientRect.GetTopRight();
-            DRAW_LINE(pt1, pt2);
-
-        } else {
-            // Top tabs
-            pt1 = clientRect.GetBottomLeft();
-            pt2 = clientRect.GetBottomRight();
-            pt1.y -= 1;
-            pt2.y -= 1;
-            DRAW_LINE(pt1, pt2);
-        }
-    }
-#else
     if(!IS_VERTICAL_TABS(style)) {
         wxPoint pt1, pt2;
         dc.SetPen(colours.activeTabPenColour);
@@ -282,6 +266,8 @@ void clTabRendererCurved::DrawBottomRect(
             pt2 = clientRect.GetBottomRight();
             DRAW_LINE(pt1, pt2);
         }
+
+        ClearActiveTabExtraLine(activeTab, dc, colours, style);
     }
-#endif
 }
+#endif

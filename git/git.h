@@ -99,6 +99,7 @@ class GitPlugin : public IPlugin
 {
     friend class GitConsole;
     friend class GitCommitListDlg;
+    friend class GitCommitDlg;
 
     typedef std::map<int, int> IntMap_t;
     enum {
@@ -300,6 +301,12 @@ public:
     void UndoAddFiles(const wxArrayString& files);
 
     void RefreshFileListView();
+    /**
+     * @brief display a message in the console
+     * used by outside classes e.g. GitDiffDlg
+     * @param message to display
+     */
+    void DisplayMessage(const wxString& message) const;
 
     void DoGitBlame(const wxString& args);      // Called by OnGitBlame or the git blame dialog
     wxString GetEditorRelativeFilepath() const; // Called by OnGitBlame or the git blame dialog

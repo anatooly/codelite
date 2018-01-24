@@ -26,15 +26,16 @@
 #ifndef __php_workspace_view__
 #define __php_workspace_view__
 
+#include "clFileSystemEvent.h"
+#include "clTreeKeyboardInput.h"
+#include "php_event.h"
 #include "php_ui.h"
 #include "php_workspace.h"
-#include <set>
-#include <bitmap_loader.h>
-#include "php_event.h"
-#include <cl_command_event.h>
+#include "wxStringHash.h"
 #include "wx_ordered_map.h"
-#include "clTreeKeyboardInput.h"
-#include "clFileSystemEvent.h"
+#include <bitmap_loader.h>
+#include <cl_command_event.h>
+#include <set>
 
 class IManager;
 class ItemData;
@@ -44,11 +45,13 @@ class PHPWorkspaceView : public PHPWorkspaceViewBase
     IManager* m_mgr;
     BitmapLoader::BitmapMap_t m_bitmaps;
     wxOrderedMap<wxTreeItemId, bool> m_itemsToSort;
-    std::map<wxString, wxTreeItemId> m_filesItems;
-    std::map<wxString, wxTreeItemId> m_foldersItems;
+    std::unordered_map<wxString, wxTreeItemId> m_filesItems;
+    std::unordered_map<wxString, wxTreeItemId> m_foldersItems;
     clTreeKeyboardInput::Ptr_t m_keyboardHelper;
     bool m_scanInProgress;
-
+    std::unordered_set<wxString> m_pendingSync;
+    wxArrayString m_draggedFiles;
+    
 private:
     enum {
         ID_TOGGLE_AUTOMATIC_UPLOAD = wxID_HIGHEST + 1,
@@ -104,11 +107,22 @@ protected:
     void DoBuildProjectNode(const wxTreeItemId& projectItem, PHPProject::Ptr_t project);
 
     /**
+     * @brief return list of files and folders for a given project
+     */
+    void DoGetFilesAndFolders(const wxString& projectName, wxArrayString& folders, wxArrayString& files);
+    void DoGetFilesAndFolders(const wxTreeItemId& parent, wxArrayString& folders, wxArrayString& files);
+
+    /**
      * @brief open an item into an editor
      */
     void DoOpenFile(const wxTreeItemId& item);
 
     void DoSetProjectActive(const wxString& projectName);
+
+    /**
+     * @brief expand the tree view to highlight the active editor
+     */
+    void DoExpandToActiveEditor();
 
 protected:
     // Handlers for PHPWorkspaceViewBase events.
@@ -136,7 +150,10 @@ protected:
     void OnRenameWorkspace(wxCommandEvent& e);
     void OnRunProject(wxCommandEvent& e);
     void OnMakeIndexPHP(wxCommandEvent& e);
+    void OnSyncWorkspaceWithFileSystem(wxCommandEvent& e);
+    void OnSyncWorkspaceWithFileSystemUI(wxUpdateUIEvent& e);
     void OnSyncProjectWithFileSystem(wxCommandEvent& e);
+    void OnSyncFolderWithFileSystem(wxCommandEvent& e);
     void OnOpenWithDefaultApp(wxCommandEvent& e);
     void OnRunActiveProject(clExecuteEvent& e);
     void OnStopExecutedProgram(clExecuteEvent& e);
@@ -147,7 +164,8 @@ protected:
     void OnFindInFilesShowing(clCommandEvent& e);
     void OnToggleAutoUpload(wxCommandEvent& e);
     void OnStartDebuggerListener(wxCommandEvent& e);
-    
+    void OnProjectSyncCompleted(clCommandEvent& event);
+
     // Php parser events
     void OnPhpParserStarted(clParseEvent& event);
     void OnPhpParserProgress(clParseEvent& event);
@@ -157,6 +175,10 @@ protected:
     void OnWorkspaceSyncStart(clCommandEvent& event);
     void OnWorkspaceSyncEnd(clCommandEvent& event);
     void OnFileSaveAs(clFileSystemEvent& event);
+    
+    // DnD
+    void OnDragBegin(wxTreeEvent& event);
+    void OnDragEnd(wxTreeEvent& event);
     
 public:
     /** Constructor */

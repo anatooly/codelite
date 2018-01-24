@@ -50,6 +50,7 @@
 #include "optionsconfig.h"
 #include "editor_config.h"
 #include "codelite_events.h"
+#include "clStrings.h"
 
 BEGIN_EVENT_TABLE(FindResultsTab, OutputTabWindow)
 EVT_COMMAND(wxID_ANY, wxEVT_SEARCH_THREAD_SEARCHSTARTED, FindResultsTab::OnSearchStart)
@@ -87,6 +88,7 @@ FindResultsTab::FindResultsTab(wxWindow* parent, wxWindowID id, const wxString& 
 
     // Use the same eventhandler for editor config changes too e.g. show/hide whitespace
     EventNotifier::Get()->Bind(wxEVT_EDITOR_CONFIG_CHANGED, &FindResultsTab::OnThemeChanged, this);
+    EventNotifier::Get()->Bind(wxEVT_WORKSPACE_CLOSED, &FindResultsTab::OnWorkspaceClosed, this);
 }
 
 FindResultsTab::~FindResultsTab()
@@ -95,6 +97,7 @@ FindResultsTab::~FindResultsTab()
         wxEVT_CL_THEME_CHANGED, wxCommandEventHandler(FindResultsTab::OnThemeChanged), NULL, this);
     wxTheApp->Disconnect(XRCID("find_in_files"), wxEVT_COMMAND_MENU_SELECTED,
         wxCommandEventHandler(FindResultsTab::OnFindInFiles), NULL, this);
+    EventNotifier::Get()->Unbind(wxEVT_WORKSPACE_CLOSED, &FindResultsTab::OnWorkspaceClosed, this);
 }
 
 void FindResultsTab::SetStyles(wxStyledTextCtrl* sci) { m_styler->SetStyles(sci); }
@@ -154,6 +157,13 @@ void FindResultsTab::OnSearchStart(wxCommandEvent& e)
         AppendText(message);
     }
     wxDELETE(data);
+
+    // Make sure that the Output view & the "Replace" tab
+    // are visible
+
+    clCommandEvent event(wxEVT_SHOW_OUTPUT_TAB);
+    event.SetSelected(true).SetString(FIND_IN_FILES_WIN);
+    EventNotifier::Get()->AddPendingEvent(event);
 }
 
 void FindResultsTab::OnSearchMatch(wxCommandEvent& e)
@@ -510,6 +520,12 @@ void FindResultsTab::LoadSearch(const History& h)
 void FindResultsTab::OnRecentSearchesUI(wxUpdateUIEvent& e) { e.Enable(!m_history.IsEmpty() && !m_searchInProgress); }
 
 void FindResultsTab::ResetStyler() { m_styler->Reset(); }
+
+void FindResultsTab::OnWorkspaceClosed(wxCommandEvent& event)
+{
+    event.Skip();
+    Clear();
+}
 
 /////////////////////////////////////////////////////////////////////////////////
 

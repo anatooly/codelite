@@ -72,29 +72,15 @@ NewPHPWorkspaceBaseDlg::NewPHPWorkspaceBaseDlg(wxWindow* parent, wxWindowID id, 
     fgSizer1->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
     fgSizer1->AddGrowableCol(1);
     
-    bSizer3->Add(fgSizer1, 0, wxALL|wxEXPAND, WXC_FROM_DIP(10));
-    
-    m_staticText2 = new wxStaticText(this, wxID_ANY, _("Name:"), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, -1)), 0);
-    
-    fgSizer1->Add(m_staticText2, 0, wxALL|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(5));
-    
-    m_textCtrlName = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, -1)), 0);
-    m_textCtrlName->SetToolTip(_("Set here the workspace name"));
-    m_textCtrlName->SetFocus();
-    #if wxVERSION_NUMBER >= 3000
-    m_textCtrlName->SetHint(wxT(""));
-    #endif
-    
-    fgSizer1->Add(m_textCtrlName, 0, wxALL|wxEXPAND, WXC_FROM_DIP(5));
-    
-    fgSizer1->Add(0, 0, 0, wxALL, WXC_FROM_DIP(5));
+    bSizer3->Add(fgSizer1, 1, wxALL|wxEXPAND, WXC_FROM_DIP(10));
     
     m_staticText3 = new wxStaticText(this, wxID_ANY, _("Path:"), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, -1)), 0);
     
     fgSizer1->Add(m_staticText3, 0, wxALL|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(5));
     
-    m_textCtrlPath = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1,-1)), 0);
+    m_textCtrlPath = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDLG_UNIT(this, wxSize(300,-1)), 0);
     m_textCtrlPath->SetToolTip(_("The workspace path. This path must exist"));
+    m_textCtrlPath->SetFocus();
     #if wxVERSION_NUMBER >= 3000
     m_textCtrlPath->SetHint(wxT(""));
     #endif
@@ -106,25 +92,19 @@ NewPHPWorkspaceBaseDlg::NewPHPWorkspaceBaseDlg(wxWindow* parent, wxWindowID id, 
     
     fgSizer1->Add(m_button49, 0, wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(5));
     
+    m_staticText2 = new wxStaticText(this, wxID_ANY, _("Name:"), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, -1)), 0);
+    
+    fgSizer1->Add(m_staticText2, 0, wxALL|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(5));
+    
+    m_textCtrlName = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, -1)), 0);
+    m_textCtrlName->SetToolTip(_("Set here the workspace name"));
+    #if wxVERSION_NUMBER >= 3000
+    m_textCtrlName->SetHint(wxT(""));
+    #endif
+    
+    fgSizer1->Add(m_textCtrlName, 0, wxALL|wxEXPAND, WXC_FROM_DIP(5));
+    
     fgSizer1->Add(0, 0, 0, wxALL, WXC_FROM_DIP(5));
-    
-    m_checkBoxAddProjectFromSources = new wxCheckBox(this, wxID_ANY, _("Create a project from the source files under the workspace path"), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1,-1)), 0);
-    m_checkBoxAddProjectFromSources->SetValue(false);
-    m_checkBoxAddProjectFromSources->SetToolTip(_("When checked, CodeLite will create a PHP project that contains all the source files located\nunder the workspace directory"));
-    
-    fgSizer1->Add(m_checkBoxAddProjectFromSources, 0, wxALL, WXC_FROM_DIP(5));
-    
-    fgSizer1->Add(0, 0, 1, wxALL, WXC_FROM_DIP(5));
-    
-    fgSizer1->Add(0, 0, 1, wxALL, WXC_FROM_DIP(5));
-    
-    m_checkBoxCreateInSeparateDir = new wxCheckBox(this, wxID_ANY, _("Create the workspace in a separate directory"), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1,-1)), 0);
-    m_checkBoxCreateInSeparateDir->SetValue(false);
-    m_checkBoxCreateInSeparateDir->SetToolTip(_("When enabled, create the workspace in a sub directory"));
-    
-    fgSizer1->Add(m_checkBoxCreateInSeparateDir, 0, wxALL, WXC_FROM_DIP(5));
-    
-    bSizer3->Add(0, 0, 1, wxALL|wxEXPAND, WXC_FROM_DIP(5));
     
     m_textCtrlPreview = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1,-1)), wxTE_READONLY);
     #if wxVERSION_NUMBER >= 3000
@@ -146,7 +126,6 @@ NewPHPWorkspaceBaseDlg::NewPHPWorkspaceBaseDlg(wxWindow* parent, wxWindowID id, 
     m_stdBtnSizer685->Realize();
     
     SetName(wxT("NewPHPWorkspaceBaseDlg"));
-    SetMinClientSize(wxSize(500,300));
     SetSize(-1,-1);
     if (GetSizer()) {
          GetSizer()->Fit(this);
@@ -164,9 +143,9 @@ NewPHPWorkspaceBaseDlg::NewPHPWorkspaceBaseDlg(wxWindow* parent, wxWindowID id, 
     }
 #endif
     // Connect events
-    m_textCtrlName->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(NewPHPWorkspaceBaseDlg::OnNameUpdated), NULL, this);
+    m_textCtrlPath->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(NewPHPWorkspaceBaseDlg::OnFolderSelected), NULL, this);
     m_button49->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(NewPHPWorkspaceBaseDlg::OnBrowse), NULL, this);
-    m_checkBoxCreateInSeparateDir->Connect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(NewPHPWorkspaceBaseDlg::OnCheckMakeSeparateDir), NULL, this);
+    m_textCtrlName->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(NewPHPWorkspaceBaseDlg::OnNameUpdated), NULL, this);
     m_button687->Connect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(NewPHPWorkspaceBaseDlg::OnOK), NULL, this);
     m_button687->Connect(wxEVT_UPDATE_UI, wxUpdateUIEventHandler(NewPHPWorkspaceBaseDlg::OnOKUI), NULL, this);
     
@@ -174,9 +153,9 @@ NewPHPWorkspaceBaseDlg::NewPHPWorkspaceBaseDlg(wxWindow* parent, wxWindowID id, 
 
 NewPHPWorkspaceBaseDlg::~NewPHPWorkspaceBaseDlg()
 {
-    m_textCtrlName->Disconnect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(NewPHPWorkspaceBaseDlg::OnNameUpdated), NULL, this);
+    m_textCtrlPath->Disconnect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(NewPHPWorkspaceBaseDlg::OnFolderSelected), NULL, this);
     m_button49->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(NewPHPWorkspaceBaseDlg::OnBrowse), NULL, this);
-    m_checkBoxCreateInSeparateDir->Disconnect(wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler(NewPHPWorkspaceBaseDlg::OnCheckMakeSeparateDir), NULL, this);
+    m_textCtrlName->Disconnect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(NewPHPWorkspaceBaseDlg::OnNameUpdated), NULL, this);
     m_button687->Disconnect(wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler(NewPHPWorkspaceBaseDlg::OnOK), NULL, this);
     m_button687->Disconnect(wxEVT_UPDATE_UI, wxUpdateUIEventHandler(NewPHPWorkspaceBaseDlg::OnOKUI), NULL, this);
     
@@ -207,6 +186,7 @@ NewFileDlgBase::NewFileDlgBase(wxWindow* parent, wxWindowID id, const wxString& 
     fgSizer2->Add(m_staticText4, 0, wxALL|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(5));
     
     m_textCtrlName = new wxTextCtrl(this, wxID_ANY, wxT(""), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, -1)), 0);
+    m_textCtrlName->SetFocus();
     #if wxVERSION_NUMBER >= 3000
     m_textCtrlName->SetHint(wxT(""));
     #endif
@@ -217,7 +197,7 @@ NewFileDlgBase::NewFileDlgBase(wxWindow* parent, wxWindowID id, const wxString& 
     
     fgSizer2->Add(m_staticText5, 0, wxALL|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(5));
     
-    m_dirPickerPath = new wxDirPickerCtrl(this, wxID_ANY, wxEmptyString, _("Select a folder"), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, -1)), wxDIRP_DEFAULT_STYLE|wxDIRP_USE_TEXTCTRL);
+    m_dirPickerPath = new wxDirPickerCtrl(this, wxID_ANY, wxEmptyString, _("Select a folder"), wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1, -1)), wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE|wxDIRP_USE_TEXTCTRL);
     
     fgSizer2->Add(m_dirPickerPath, 0, wxALL|wxEXPAND|wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(5));
     
@@ -288,9 +268,9 @@ OpenResourceDlgBase::OpenResourceDlgBase(wxWindow* parent, wxWindowID id, const 
     
     bSizer10->Add(m_dvListCtrl, 1, wxALL|wxEXPAND, WXC_FROM_DIP(5));
     
-    m_dvListCtrl->AppendIconTextColumn(_("Name"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(400), wxALIGN_LEFT);
-    m_dvListCtrl->AppendTextColumn(_("Kind"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(80), wxALIGN_LEFT);
-    m_dvListCtrl->AppendTextColumn(_("File"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(250), wxALIGN_LEFT);
+    m_dvListCtrl->AppendIconTextColumn(_("Name"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(400), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    m_dvListCtrl->AppendTextColumn(_("Kind"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(80), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    m_dvListCtrl->AppendTextColumn(_("File"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(250), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
     
     SetName(wxT("OpenResourceDlgBase"));
     SetMinClientSize(wxSize(400,300));
@@ -395,19 +375,43 @@ PHPSettingsBaseDlg::PHPSettingsBaseDlg(wxWindow* parent, wxWindowID id, const wx
     
     bSizer18->Add(0, 0, 1, wxALL|wxEXPAND, WXC_FROM_DIP(5));
     
-    m_textCtrlIncludePath = new wxTextCtrl(m_panel11, wxID_ANY, wxT(""), wxDefaultPosition, wxDLG_UNIT(m_panel11, wxSize(-1, -1)), wxTE_RICH2|wxTE_PROCESS_ENTER|wxTE_MULTILINE|wxTE_DONTWRAP);
-    #ifdef __WXMSW__
-    // To get the newer version of the font on MSW, we use font wxSYS_DEFAULT_GUI_FONT with family set to wxFONTFAMILY_TELETYPE
-    wxFont m_textCtrlIncludePathFont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
-    m_textCtrlIncludePathFont.SetFamily(wxFONTFAMILY_TELETYPE);
-    #else
-    wxFont m_textCtrlIncludePathFont = wxSystemSettings::GetFont(wxSYS_ANSI_FIXED_FONT);
-    m_textCtrlIncludePathFont.SetFamily(wxFONTFAMILY_TELETYPE);
-    #endif
-    m_textCtrlIncludePath->SetFont(m_textCtrlIncludePathFont);
-    m_textCtrlIncludePath->SetToolTip(_("Additional include path for PHP (affects command line runs only)"));
+    m_stcIncludePaths = new wxStyledTextCtrl(m_panel11, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_panel11, wxSize(-1,-1)), 0);
+    // Configure the fold margin
+    m_stcIncludePaths->SetMarginType     (4, wxSTC_MARGIN_SYMBOL);
+    m_stcIncludePaths->SetMarginMask     (4, wxSTC_MASK_FOLDERS);
+    m_stcIncludePaths->SetMarginSensitive(4, true);
+    m_stcIncludePaths->SetMarginWidth    (4, 0);
     
-    bSizer13->Add(m_textCtrlIncludePath, 1, wxALL|wxEXPAND, WXC_FROM_DIP(5));
+    // Configure the tracker margin
+    m_stcIncludePaths->SetMarginWidth(1, 0);
+    
+    // Configure the symbol margin
+    m_stcIncludePaths->SetMarginType (2, wxSTC_MARGIN_SYMBOL);
+    m_stcIncludePaths->SetMarginMask (2, ~(wxSTC_MASK_FOLDERS));
+    m_stcIncludePaths->SetMarginWidth(2, 0);
+    m_stcIncludePaths->SetMarginSensitive(2, true);
+    
+    // Configure the line numbers margin
+    m_stcIncludePaths->SetMarginType(0, wxSTC_MARGIN_NUMBER);
+    m_stcIncludePaths->SetMarginWidth(0,0);
+    
+    // Configure the line symbol margin
+    m_stcIncludePaths->SetMarginType(3, wxSTC_MARGIN_FORE);
+    m_stcIncludePaths->SetMarginMask(3, 0);
+    m_stcIncludePaths->SetMarginWidth(3,0);
+    // Select the lexer
+    m_stcIncludePaths->SetLexer(wxSTC_LEX_NULL);
+    // Set default font / styles
+    m_stcIncludePaths->StyleClearAll();
+    m_stcIncludePaths->SetWrapMode(0);
+    m_stcIncludePaths->SetIndentationGuides(0);
+    m_stcIncludePaths->SetKeyWords(0, wxT(""));
+    m_stcIncludePaths->SetKeyWords(1, wxT(""));
+    m_stcIncludePaths->SetKeyWords(2, wxT(""));
+    m_stcIncludePaths->SetKeyWords(3, wxT(""));
+    m_stcIncludePaths->SetKeyWords(4, wxT(""));
+    
+    bSizer13->Add(m_stcIncludePaths, 1, wxALL|wxEXPAND, WXC_FROM_DIP(5));
     
     m_panel15 = new wxPanel(m_treebook9, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_treebook9, wxSize(-1,-1)), wxTAB_TRAVERSAL);
     m_treebook9->AddPage(m_panel15, _("Code Completion"), false, wxNOT_FOUND);
@@ -489,18 +493,6 @@ PHPSettingsBaseDlg::PHPSettingsBaseDlg(wxWindow* parent, wxWindowID id, const wx
     
     fgSizer5->Add(m_textCtrlIdeKey, 0, wxALL|wxEXPAND, WXC_FROM_DIP(5));
     
-    m_panel407 = new wxPanel(m_treebook9, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_treebook9, wxSize(-1,-1)), wxTAB_TRAVERSAL);
-    m_treebook9->AddPage(m_panel407, _("Syntax Check"), false, wxNOT_FOUND);
-    
-    wxBoxSizer* boxSizer409 = new wxBoxSizer(wxVERTICAL);
-    m_panel407->SetSizer(boxSizer409);
-    
-    m_checkBoxRunLint = new wxCheckBox(m_panel407, wxID_ANY, _("Perform syntax check when saving a file"), wxDefaultPosition, wxDLG_UNIT(m_panel407, wxSize(-1,-1)), 0);
-    m_checkBoxRunLint->SetValue(true);
-    m_checkBoxRunLint->SetToolTip(_("When saving a PHP script, run syntax check and report errors in the editor"));
-    
-    boxSizer409->Add(m_checkBoxRunLint, 0, wxALL, WXC_FROM_DIP(5));
-    
     wxBoxSizer* bSizer16 = new wxBoxSizer(wxHORIZONTAL);
     
     bSizer12->Add(bSizer16, 0, wxALL|wxALIGN_CENTER_HORIZONTAL, WXC_FROM_DIP(5));
@@ -525,11 +517,9 @@ PHPSettingsBaseDlg::PHPSettingsBaseDlg(wxWindow* parent, wxWindowID id, const wx
     m_treebook9->ExpandNode( 0, true );
     m_treebook9->ExpandNode( 1, true );
     m_treebook9->ExpandNode( 2, true );
-    m_treebook9->ExpandNode( 3, true );
     
     SetName(wxT("PHPSettingsBaseDlg"));
-    SetMinClientSize(wxSize(500,300));
-    SetSize(500,300);
+    SetSize(-1,-1);
     if (GetSizer()) {
          GetSizer()->Fit(this);
     }
@@ -776,8 +766,8 @@ PHPProjectSettingsBase::PHPProjectSettingsBase(wxWindow* parent, wxWindowID id, 
     
     boxSizer51->Add(m_dvListCtrlFileMapping, 1, wxALL|wxEXPAND, WXC_FROM_DIP(5));
     
-    m_dvListCtrlFileMapping->AppendTextColumn(_("Source folder"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
-    m_dvListCtrlFileMapping->AppendTextColumn(_("Target folder"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
+    m_dvListCtrlFileMapping->AppendTextColumn(_("Source folder"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    m_dvListCtrlFileMapping->AppendTextColumn(_("Target folder"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
     m_panel47 = new wxPanel(m_treebook41, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_treebook41, wxSize(-1,-1)), wxTAB_TRAVERSAL);
     #ifdef __WXMSW__
     // To get the newer version of the font on MSW, we use font wxSYS_DEFAULT_GUI_FONT with family set to wxFONTFAMILY_TELETYPE
@@ -1084,10 +1074,10 @@ PHPDebugPaneBase::PHPDebugPaneBase(wxWindow* parent, wxWindowID id, const wxPoin
     
     boxSizer144->Add(m_dvListCtrlStackTrace, 1, wxALL|wxEXPAND, WXC_FROM_DIP(2));
     
-    m_dvListCtrlStackTrace->AppendIconTextColumn(_("Level"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
-    m_dvListCtrlStackTrace->AppendTextColumn(_("Where"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
-    m_dvListCtrlStackTrace->AppendTextColumn(_("File"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
-    m_dvListCtrlStackTrace->AppendTextColumn(_("Line"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
+    m_dvListCtrlStackTrace->AppendIconTextColumn(_("Level"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    m_dvListCtrlStackTrace->AppendTextColumn(_("Where"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    m_dvListCtrlStackTrace->AppendTextColumn(_("File"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    m_dvListCtrlStackTrace->AppendTextColumn(_("Line"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
     m_panel142 = new wxPanel(m_auiBook, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(m_auiBook, wxSize(-1,-1)), wxTAB_TRAVERSAL);
     m_auiBook->AddPage(m_panel142, _("Breakpoints"), false);
     
@@ -1102,9 +1092,9 @@ PHPDebugPaneBase::PHPDebugPaneBase(wxWindow* parent, wxWindowID id, const wxPoin
     
     boxSizer204->Add(m_dvListCtrlBreakpoints, 1, wxALL|wxEXPAND, WXC_FROM_DIP(2));
     
-    m_dvListCtrlBreakpoints->AppendTextColumn(_("ID"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
-    m_dvListCtrlBreakpoints->AppendTextColumn(_("File"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
-    m_dvListCtrlBreakpoints->AppendTextColumn(_("Line"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
+    m_dvListCtrlBreakpoints->AppendTextColumn(_("ID"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    m_dvListCtrlBreakpoints->AppendTextColumn(_("File"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    m_dvListCtrlBreakpoints->AppendTextColumn(_("Line"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
     wxBoxSizer* boxSizer206 = new wxBoxSizer(wxVERTICAL);
     
     boxSizer204->Add(boxSizer206, 0, 0, WXC_FROM_DIP(5));
@@ -1169,10 +1159,10 @@ LocalsViewBase::LocalsViewBase(wxWindow* parent, wxWindowID id, const wxPoint& p
     
     boxSizer236->Add(m_dataview, 1, wxALL|wxEXPAND, WXC_FROM_DIP(2));
     
-    m_dataview->AppendTextColumn(_("Name"), m_dataview->GetColumnCount(), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
-    m_dataview->AppendTextColumn(_("Type"), m_dataview->GetColumnCount(), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
-    m_dataview->AppendTextColumn(_("Classname"), m_dataview->GetColumnCount(), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
-    m_dataview->AppendTextColumn(_("Value"), m_dataview->GetColumnCount(), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
+    m_dataview->AppendTextColumn(_("Name"), m_dataview->GetColumnCount(), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    m_dataview->AppendTextColumn(_("Type"), m_dataview->GetColumnCount(), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    m_dataview->AppendTextColumn(_("Classname"), m_dataview->GetColumnCount(), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    m_dataview->AppendTextColumn(_("Value"), m_dataview->GetColumnCount(), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
     
     SetName(wxT("LocalsViewBase"));
     SetSize(-1,-1);
@@ -1390,7 +1380,7 @@ EvalPaneBase::EvalPaneBase(wxWindow* parent, wxWindowID id, const wxPoint& pos, 
     wxBoxSizer* boxSizer255 = new wxBoxSizer(wxVERTICAL);
     this->SetSizer(boxSizer255);
     
-    m_notebook257 = new Notebook(this, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1,-1)), wxBK_DEFAULT);
+    m_notebook257 = new wxNotebook(this, wxID_ANY, wxDefaultPosition, wxDLG_UNIT(this, wxSize(-1,-1)), wxNB_FIXEDWIDTH|wxBK_DEFAULT);
     m_notebook257->SetName(wxT("m_notebook257"));
     
     boxSizer255->Add(m_notebook257, 1, wxALL|wxEXPAND, WXC_FROM_DIP(2));
@@ -1787,7 +1777,7 @@ NewPHPProjectWizardBase::NewPHPProjectWizardBase(wxWindow* parent, wxWindowID id
     
     flexGridSizer519->Add(m_staticText525, 0, wxALL|wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL, WXC_FROM_DIP(5));
     
-    m_dirPickerPath = new wxDirPickerCtrl(m_wizardPageProjectDetails, wxID_ANY, wxEmptyString, _("Select a folder"), wxDefaultPosition, wxDLG_UNIT(m_wizardPageProjectDetails, wxSize(-1,-1)), wxDIRP_DEFAULT_STYLE|wxDIRP_USE_TEXTCTRL);
+    m_dirPickerPath = new wxDirPickerCtrl(m_wizardPageProjectDetails, wxID_ANY, wxEmptyString, _("Select a folder"), wxDefaultPosition, wxDLG_UNIT(m_wizardPageProjectDetails, wxSize(-1,-1)), wxDIRP_SMALL|wxDIRP_DEFAULT_STYLE|wxDIRP_USE_TEXTCTRL);
     m_dirPickerPath->SetToolTip(_("Select the project path"));
     
     flexGridSizer519->Add(m_dirPickerPath, 0, wxALL|wxEXPAND, WXC_FROM_DIP(5));
@@ -2143,8 +2133,8 @@ PHPSettersGettersDialogBase::PHPSettersGettersDialogBase(wxWindow* parent, wxWin
     
     boxSizer657->Add(m_dvListCtrlFunctions, 1, wxALL|wxEXPAND, WXC_FROM_DIP(5));
     
-    m_dvListCtrlFunctions->AppendToggleColumn(_("?"), wxDATAVIEW_CELL_ACTIVATABLE, WXC_FROM_DIP(40), wxALIGN_LEFT);
-    m_dvListCtrlFunctions->AppendIconTextColumn(_("Variable"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT);
+    m_dvListCtrlFunctions->AppendToggleColumn(_("?"), wxDATAVIEW_CELL_ACTIVATABLE, WXC_FROM_DIP(40), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
+    m_dvListCtrlFunctions->AppendIconTextColumn(_("Variable"), wxDATAVIEW_CELL_INERT, WXC_FROM_DIP(-2), wxALIGN_LEFT, wxDATAVIEW_COL_RESIZABLE);
     wxFlexGridSizer* flexGridSizer667 = new wxFlexGridSizer(0, 2, 0, 0);
     flexGridSizer667->SetFlexibleDirection( wxBOTH );
     flexGridSizer667->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );

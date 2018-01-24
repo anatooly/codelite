@@ -55,13 +55,13 @@
 #include "clMainFrameHelper.h"
 
 // forward decls
+class WebUpdateJob;
 class CodeLiteApp;
 class clSingleInstanceThread;
 class wxCustomStatusBar;
 class TagEntry;
 class WorkspacePane;
 class wxToolBar;
-class Notebook;
 class OpenWindowsPanel;
 class WorkspaceTab;
 class FileExplorer;
@@ -77,7 +77,8 @@ extern const wxEventType wxEVT_LOAD_PERSPECTIVE;
 extern const wxEventType wxEVT_REFRESH_PERSPECTIVE_MENU;
 extern const wxEventType wxEVT_ACTIVATE_EDITOR;
 
-struct StartPageData {
+struct StartPageData
+{
     wxString name;
     wxString file_path;
     wxString action;
@@ -115,6 +116,11 @@ class clMainFrame : public wxFrame
 #ifndef __WXMSW__
     ZombieReaperPOSIX m_zombieReaper;
 #endif
+
+#ifdef __WXGTK__
+    bool m_isWaylandSession;
+#endif
+
     // Maintain a set of core toolbars (i.e. toolbars not owned by any plugin)
     wxStringSet_t m_coreToolbars;
     clStatusBar* m_statusBar;
@@ -125,7 +131,8 @@ class clMainFrame : public wxFrame
     wxPrintDialogData m_printDlgData;
     wxToolBar* m_mainToolBar;
     clMainFrameHelper::Ptr_t m_frameHelper;
-
+    WebUpdateJob *m_webUpdate;
+    
 public:
     static bool m_initCompleted;
 
@@ -138,6 +145,11 @@ protected:
 public:
     static clMainFrame* Get();
     static void Initialize(bool loadLastSession);
+
+    /**
+     * @brief goto anything..
+     */
+    void OnGotoAnything(wxCommandEvent& e);
 
     /**
      * @brief Return CodeLite App object
@@ -290,6 +302,12 @@ public:
     bool SaveLayoutAndSession();
 
     /**
+     * @brief save settings (such as whether to show the splashscreen) which should be saved
+     * regardless of whether SaveLayoutAndSession is called
+     */
+    void SaveGeneralSettings();
+
+    /**
      * @brief create the recently-opened-workspaces menu
      */
     void CreateRecentlyOpenedWorkspacesMenu();
@@ -297,11 +315,19 @@ public:
 
     void Bootstrap();
 
+#ifdef __WXGTK__
+    bool GetIsWaylandSession() const { return m_isWaylandSession; }
+#endif
+
 private:
     // make our frame's constructor private
-    clMainFrame(wxWindow* pParent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size,
-        long style = wxMINIMIZE_BOX | wxMAXIMIZE_BOX | wxCLOSE_BOX | wxCAPTION | wxSYSTEM_MENU | wxRESIZE_BORDER |
-            wxCLIP_CHILDREN);
+    clMainFrame(wxWindow* pParent,
+                wxWindowID id,
+                const wxString& title,
+                const wxPoint& pos,
+                const wxSize& size,
+                long style = wxMINIMIZE_BOX | wxMAXIMIZE_BOX | wxCLOSE_BOX | wxCAPTION | wxSYSTEM_MENU |
+                             wxRESIZE_BORDER | wxCLIP_CHILDREN);
     wxString CreateWorkspaceTable();
     wxString CreateFilesTable();
     void StartTimer();
@@ -378,7 +404,8 @@ protected:
     void OnFileLoadTabGroup(wxCommandEvent& event);
     void OnNativeTBUnRedoDropdown(wxCommandEvent& event);
     void OnTBUnRedo(wxAuiToolBarEvent& event);
-    void OnCompleteWord(wxCommandEvent& event);
+    void OnCodeComplete(wxCommandEvent& event);
+    void OnWordComplete(wxCommandEvent& event);
     void OnCompleteWordRefreshList(wxCommandEvent& event);
     void OnFunctionCalltip(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
@@ -478,7 +505,7 @@ protected:
     void OnGrepWordUI(wxUpdateUIEvent& e);
     void OnThemeChanged(wxCommandEvent& e);
     void OnEnvironmentVariablesModified(clCommandEvent& e);
-    
+
     // handle symbol tree events
     void OnParsingThreadMessage(wxCommandEvent& e);
     void OnDatabaseUpgrade(wxCommandEvent& e);
@@ -573,6 +600,7 @@ protected:
     void OnConfigureAccelerators(wxCommandEvent& e);
     void OnStartPageEvent(wxCommandEvent& e);
     void OnNewVersionAvailable(wxCommandEvent& e);
+    void OnVersionCheckError(wxCommandEvent& e);
     void OnGotoCodeLiteDownloadPage(wxCommandEvent& e);
     void OnBatchBuild(wxCommandEvent& e);
     void OnBatchBuildUI(wxUpdateUIEvent& e);

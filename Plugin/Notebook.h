@@ -26,22 +26,35 @@
 #ifndef NOTEBOOK_H
 #define NOTEBOOK_H
 
-#include <wx/panel.h>
-#include <wx/simplebook.h>
-#include <vector>
-#include <list>
-#include <wx/settings.h>
-#include <wx/dcmemory.h>
-#include <wx/sharedptr.h>
-#include <wx/bookctrl.h>
-#include "windowstack.h"
-#include <wx/dynarray.h>
-#include <wx/dnd.h>
+#include "cl_defs.h"
+
+#if USE_AUI_NOTEBOOK
+#include "clAuiNotebook.h"
+#else
+#include "clTabHistory.h"
 #include "clTabRenderer.h"
+#include "windowstack.h"
+#include <list>
+#include <vector>
+#include <wx/bookctrl.h>
+#include <wx/dcmemory.h>
+#include <wx/dnd.h>
+#include <wx/dynarray.h>
+#include <wx/panel.h>
+#include <wx/settings.h>
+#include <wx/sharedptr.h>
 
 class Notebook;
 class wxMenu;
 class clTabCtrl;
+
+enum class eDirection {
+    kInvalid = -1,
+    kRight = 0,
+    kLeft = 1,
+    kUp = 2,
+    kDown = 3,
+};
 
 // DnD support of tabs
 class WXDLLIMPEXP_SDK clTabCtrlDropTarget : public wxTextDropTarget
@@ -52,33 +65,6 @@ public:
     clTabCtrlDropTarget(clTabCtrl* tabCtrl);
     virtual ~clTabCtrlDropTarget();
     virtual bool OnDropText(wxCoord x, wxCoord y, const wxString& data);
-};
-
-class WXDLLIMPEXP_SDK clTabHistory
-{
-    wxArrayPtrVoid m_history;
-    wxWindow* m_page; /// The page to add to the hisotry
-
-public:
-    typedef wxSharedPtr<clTabHistory> Ptr_t;
-
-public:
-    clTabHistory();
-    virtual ~clTabHistory();
-
-    void Push(wxWindow* page);
-    void Pop(wxWindow* page);
-    wxWindow* PrevPage();
-    /**
-     * @brief clear the history
-     */
-    void Clear();
-
-    /**
-     * @brief return the tabbing history
-     * @return
-     */
-    const wxArrayPtrVoid& GetHistory() const { return m_history; }
 };
 
 /**
@@ -116,6 +102,7 @@ protected:
     void OnLeftDClick(wxMouseEvent& event);
     void OnMouseMotion(wxMouseEvent& event);
     void OnMouseMiddleClick(wxMouseEvent& event);
+    void OnMouseScroll(wxMouseEvent& event);
     void OnContextMenu(wxContextMenuEvent& event);
     int DoGetPageIndex(wxWindow* win) const;
     int DoGetPageIndex(const wxString& label) const;
@@ -151,7 +138,7 @@ protected:
     void DoDeletePage(size_t page) { RemovePage(page, true, true); }
     void DoShowTabList();
     void DoUpdateXCoordFromPage(wxWindow* page, int diff);
-    
+
 public:
     clTabCtrl(wxWindow* notebook, size_t style);
     virtual ~clTabCtrl();
@@ -160,15 +147,11 @@ public:
      * @brief return the art class used by this tab control
      */
     clTabRenderer::Ptr_t GetArt() { return m_art; }
+
     /**
      * @brief replace the art used by this tab control
      */
-    void SetArt(clTabRenderer::Ptr_t art)
-    {
-        m_art = art;
-        DoSetBestSize();
-        Refresh();
-    }
+    void SetArt(clTabRenderer::Ptr_t art);
 
     bool IsVerticalTabs() const;
 
@@ -180,14 +163,16 @@ public:
      * @param pt mouse click position
      * @param realPosition [output] the index position in the m_tabs array
      * @param tabHit [output] the index position in the m_visibleTabs array
+     * @param leftSide [output] if the point is on the LEFT side of the tab's rect, then return wxALIGN_LEFT, otherwise
+     * return wxALIGN_RIGHT. Another possible value is wxALIGN_INVALID
      */
-    void TestPoint(const wxPoint& pt, int& realPosition, int& tabHit);
+    void TestPoint(const wxPoint& pt, int& realPosition, int& tabHit, eDirection& align);
 
     /**
      * @brief Move the active tab to a new position
      * @param newIndex the new position. 0-based index in the m_tabs array
      */
-    bool MoveActiveToIndex(int newIndex);
+    bool MoveActiveToIndex(int newIndex, eDirection direction);
 
     /**
      * @brief return true if index is in the tabs vector range
@@ -255,12 +240,8 @@ public:
     /**
      * Constructor
      */
-    Notebook(wxWindow* parent,
-             wxWindowID id = wxID_ANY,
-             const wxPoint& pos = wxDefaultPosition,
-             const wxSize& size = wxDefaultSize,
-             long style = 0,
-             const wxString& name = wxEmptyString);
+    Notebook(wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition,
+             const wxSize& size = wxDefaultSize, long style = 0, const wxString& name = wxEmptyString);
 
     /**
      * @brief update the notebook art class and refresh
@@ -301,8 +282,8 @@ public:
     /**
      * @brief insert page at a specified position
      */
-    bool InsertPage(
-        size_t index, wxWindow* page, const wxString& label, bool selected = false, const wxBitmap& bmp = wxNullBitmap);
+    bool InsertPage(size_t index, wxWindow* page, const wxString& label, bool selected = false,
+                    const wxBitmap& bmp = wxNullBitmap);
 
     /**
      * @brief return the currently selected page or null
@@ -437,5 +418,5 @@ wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_SDK, wxEVT_BOOK_PAGE_CLOSE_BUTTON, wxBookCt
 wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_SDK, wxEVT_BOOK_TAB_DCLICKED, wxBookCtrlEvent);
 wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_SDK, wxEVT_BOOK_NAVIGATING, wxBookCtrlEvent);
 wxDECLARE_EXPORTED_EVENT(WXDLLIMPEXP_SDK, wxEVT_BOOK_TABAREA_DCLICKED, wxBookCtrlEvent);
-
+#endif // USE_AUI_NOTEBOOK
 #endif // NOTEBOOK_H

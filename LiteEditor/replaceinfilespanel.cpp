@@ -35,6 +35,9 @@
 #include "clFileSystemEvent.h"
 #include "event_notifier.h"
 #include "macros.h"
+#include "clStrings.h"
+#include "cl_command_event.h"
+#include "codelite_events.h"
 
 ReplaceInFilesPanel::ReplaceInFilesPanel(wxWindow* parent, int id, const wxString& name)
     : FindResultsTab(parent, id, name)
@@ -101,9 +104,13 @@ void ReplaceInFilesPanel::OnSearchStart(wxCommandEvent& e)
     // set the "Replace With" field with the user value
     SearchData* data = (SearchData*)e.GetClientData();
     m_replaceWith->ChangeValue(data->GetReplaceWith());
-
-    //
     FindResultsTab::OnSearchStart(e);
+
+    // Make sure that the Output view & the "Replace" tab
+    // are visible
+    clCommandEvent event(wxEVT_SHOW_OUTPUT_TAB);
+    event.SetSelected(true).SetString(REPLACE_IN_FILES);
+    EventNotifier::Get()->AddPendingEvent(event);
 }
 
 void ReplaceInFilesPanel::OnSearchMatch(wxCommandEvent& e)

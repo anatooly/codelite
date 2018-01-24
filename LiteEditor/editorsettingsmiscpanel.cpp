@@ -100,12 +100,17 @@ EditorSettingsMiscPanel::EditorSettingsMiscPanel(wxWindow* parent)
         FileLogger::GetVerbosityAsString(clConfig::Get().Read(kConfigLogVerbosity, FileLogger::Error)));
     m_checkBoxRestoreSession->SetValue(clConfig::Get().Read(kConfigRestoreLastSession, true));
     m_textCtrlPattern->ChangeValue(clConfig::Get().Read(kConfigFrameTitlePattern, wxString("$workspace $fullpath")));
+    m_statusbarShowLine->SetValue(clConfig::Get().Read(kConfigStatusbarShowLine, true));
+    m_statusbarShowCol->SetValue(clConfig::Get().Read(kConfigStatusbarShowColumn, true));
+    m_statusbarShowPos->SetValue(clConfig::Get().Read(kConfigStatusbarShowPosition, false));
+    m_statusbarShowFileLength->SetValue(clConfig::Get().Read(kConfigStatusbarShowLength, false));
 
     bool showSplash = info.GetFlags() & CL_SHOW_SPLASH ? true : false;
     m_showSplashScreen->SetValue(showSplash);
     m_oldMswUseTheme = m_checkBoxEnableMSWTheme->IsChecked();
 
     m_redirectLogOutput->SetValue(clConfig::Get().Read(kConfigRedirectLogOutput, true));
+    m_checkBoxPromptReleaseOnly->SetValue(clConfig::Get().Read("PromptForNewReleaseOnly", false));
 }
 
 void EditorSettingsMiscPanel::OnClearButtonClick(wxCommandEvent&)
@@ -136,7 +141,11 @@ void EditorSettingsMiscPanel::Save(OptionsConfigPtr options)
     clConfig::Get().Write(kConfigMaxOpenedTabs, ::wxStringToInt(m_spinCtrlMaxOpenTabs->GetValue(), 15));
     clConfig::Get().Write(kConfigRestoreLastSession, m_checkBoxRestoreSession->IsChecked());
     clConfig::Get().Write(kConfigFrameTitlePattern, m_textCtrlPattern->GetValue());
-
+    clConfig::Get().Write(kConfigStatusbarShowLine, m_statusbarShowLine->IsChecked());
+    clConfig::Get().Write(kConfigStatusbarShowColumn, m_statusbarShowCol->IsChecked());
+    clConfig::Get().Write(kConfigStatusbarShowPosition, m_statusbarShowPos->IsChecked());
+    clConfig::Get().Write(kConfigStatusbarShowLength, m_statusbarShowFileLength->IsChecked());
+    
     bool oldUseSingleToolbar = !PluginManager::Get()->AllowToolbar();
     EditorConfigST::Get()->SetInteger(wxT("UseSingleToolbar"), m_useSingleToolbar->IsChecked() ? 1 : 0);
 
@@ -166,8 +175,6 @@ void EditorSettingsMiscPanel::Save(OptionsConfigPtr options)
 
     // save file font encoding
     options->SetFileFontEncoding(m_fileEncoding->GetStringSelection());
-
-    // Update the tags manager encoding
     TagsManagerST::Get()->SetEncoding(options->GetFileFontEncoding());
 
     if(oldIconSize != iconSize || oldUseSingleToolbar != m_useSingleToolbar->IsChecked()) {
@@ -213,7 +220,7 @@ void EditorSettingsMiscPanel::Save(OptionsConfigPtr options)
     }
 
     clConfig::Get().Write("RedirectLogOutput", m_redirectLogOutput->IsChecked());
-
+    clConfig::Get().Write("PromptForNewReleaseOnly", m_checkBoxPromptReleaseOnly->IsChecked());
     options->SetOptions(flags);
     m_restartRequired = ((oldIconFlags != newIconFlags) || m_restartRequired);
 }
@@ -292,7 +299,7 @@ int EditorSettingsMiscPanel::FindAvailableLocales()
 
 void EditorSettingsMiscPanel::OnLogVerbosityChanged(wxCommandEvent& event)
 {
-    FileLogger::Get().SetVerbosity(event.GetString());
+    FileLogger::SetVerbosity(event.GetString());
     clConfig::Get().Write("LogVerbosity", FileLogger::GetVerbosityAsNumber(m_choice4->GetStringSelection()));
 }
 
@@ -318,4 +325,9 @@ void EditorSettingsMiscPanel::OnResetAnnoyingDialogsAnswers(wxCommandEvent& even
 {
     wxUnusedVar(event);
     clConfig::Get().ClearAnnoyingDlgAnswers();
+}
+
+void EditorSettingsMiscPanel::OnPromptStableReleaseUI(wxUpdateUIEvent& event)
+{
+    event.Enable(m_versionCheckOnStartup->IsChecked());
 }

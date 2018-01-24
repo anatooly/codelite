@@ -182,10 +182,10 @@ wxArrayString clConfig::MergeArrays(const wxArrayString& arr1, const wxArrayStri
     return output;
 }
 
-JSONElement::wxStringMap_t clConfig::MergeStringMaps(
-    const JSONElement::wxStringMap_t& map1, const JSONElement::wxStringMap_t& map2) const
+wxStringMap_t clConfig::MergeStringMaps(
+    const wxStringMap_t& map1, const wxStringMap_t& map2) const
 {
-    JSONElement::wxStringMap_t output;
+    wxStringMap_t output;
     output.insert(map1.begin(), map1.end());
     output.insert(map2.begin(), map2.end());
     return output;
@@ -510,8 +510,10 @@ void clConfig::Write(const wxString& name, const wxFont& value)
 wxColour clConfig::Read(const wxString& name, const wxColour& defaultValue)
 {
     wxString strValue;
-    if(!Read(name, strValue)) return defaultValue;
-
+    strValue = Read(name, wxString());
+    if(strValue.IsEmpty()) {
+        return defaultValue;
+    }
     wxColour col(strValue);
     return col;
 }
